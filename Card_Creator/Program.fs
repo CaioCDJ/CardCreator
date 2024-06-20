@@ -48,7 +48,7 @@ module Main =
         "Warrior"
         "Winged Beast"
         "Zombie"
-                                        ]
+    ]
 
     let view () =
         Component(fun ctx -> Grid.create [ 
@@ -67,7 +67,6 @@ module Main =
                     Border.child(TextBlock.create [
                         TextBlock.text "test"                        
                     ])
-                    
                 ] 
 
                 Border.create [
@@ -172,7 +171,6 @@ module Main =
 
 type MainWindow() =
     inherit HostWindow()
-
     do
         base.Title <- "Yugioh Card Creator"
         base.MinWidth <- 500
@@ -196,8 +194,9 @@ module Program =
 
     [<EntryPoint>]
     let main (args: string[]) =
-        AppBuilder
-            .Configure<App>()
-            .UsePlatformDetect()
-            .UseSkia()
-            .StartWithClassicDesktopLifetime(args)
+        Card_Creator.CardMaker.handle
+        // AppBuilder
+        //     .Configure<App>()
+        //     .UsePlatformDetect()
+        //     .UseSkia()
+        //     .StartWithClassicDesktopLifetime(args)

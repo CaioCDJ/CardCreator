@@ -15,8 +15,9 @@ module CardTypes =
         | Spell
         | Trap
 
+
     type attributes =
-        | Fire
+        | Fire 
         | Water
         | Wind
         | Earth
@@ -66,4 +67,4 @@ module CardTypes =
          }
 
     // spells and traps
-
+    
