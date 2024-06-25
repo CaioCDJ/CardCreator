@@ -36,9 +36,9 @@ module CardMaker =
     // bigger names for you
     let normalizeName = ""
 
-    let genericInfo (image: Image) : Image =
+    let genericInfo ((card, image): Card * Image) : Card * Image =
         //Name and Description type
-        
+
         let font = SystemFonts.CreateFont("Arial", 80f, FontStyle.Regular)
 
         let optionsName = RichTextOptions(font)
@@ -47,69 +47,122 @@ module CardMaker =
         optionsName.WordBreaking <- WordBreaking.Standard
         optionsName.WrappingLength <- 1048f
         optionsName.HorizontalAlignment <- HorizontalAlignment.Left
-        
-        let brush = Brushes.Solid(Color.White)
+
+        let brush =
+            Brushes.Solid(
+                if
+                    card.cardType = CardType.Xyz
+                    || card.cardType = CardType.Spell
+                    || card.cardType = CardType.Trap
+                then
+                    Color.WhiteSmoke
+                else
+                    Color.Black
+            )
 
         let pen = Pens.Solid(Color.Gray, 1.0f)
 
-        let text = "Dog of Greed"
+        image.Mutate(fun x -> x.DrawText(optionsName, card.name, brush, pen) |> ignore)
 
-        image.Mutate(fun x -> x.DrawText(optionsName, text, brush, pen)|>ignore)
-
-        let optionsDescription = RichTextOptions(font)
-        optionsDescription.Origin <- PointF(35.0f, 33.0f)
-        optionsDescription.TabWidth <- 0.0f
-        optionsDescription.WordBreaking <- WordBreaking.Standard
-        optionsDescription.WrappingLength <- 1048f
-        optionsDescription.HorizontalAlignment <- HorizontalAlignment.Left
-        
-        image
+        (card, image)
 
 
-    let addDescription (image: Image) =
+    let addDescription ((card, image): Card * Image) : Card * Image =
 
         let font = SystemFonts.CreateFont("Arial", 37f, FontStyle.Regular)
 
         let optionsDescription = RichTextOptions(font)
-        optionsDescription.Origin <-  PointF(109.0f, 1530.0f)
+
+        optionsDescription.Origin <-
+            PointF(
+                109.0f,
+                if card.cardType = CardType.Trap || card.cardType = CardType.Spell then
+                    1530.0f
+                else
+                    1580.0f
+            )
+
         optionsDescription.WordBreaking <- WordBreaking.Standard
         optionsDescription.WrappingLength <- 1165f
         optionsDescription.TextJustification <- TextJustification.InterWord
         optionsDescription.VerticalAlignment <- VerticalAlignment.Top
         optionsDescription.HorizontalAlignment <- HorizontalAlignment.Left
 
-        let txt = "Lorem ipsum dolor sit amet, officia excepteur ex fugiat reprehenderit enim labore culpa sint ad nisi Lorem pariatur mollit ex esse exercitation amet. Nisi anim cupidatat excepteur officia. Reprehenderit nostrud nostrud ipsum Lorem est aliquip amet voluptate voluptate dolor minim nulla est proident. Nostrud officia pariatur ut officia. Sit irure elit esse ea nulla sunt ex occaecat reprehenderit commodo officia dolor Lorem duis laboris cupidatat officia voluptate. Culpa proident adipisicing id nulla nisi laboris ex in Lorem sunt duis officia eiusmod. Aliqua reprehenderit commodo ex non excepteur duis sunt velit enim. Voluptate laboris sint cupidatat ullamco ut ea consectetur et est culpa et culpa duis."
+
         let brush = Brushes.Solid(Color.Black)
-        
-        image.Mutate(fun x -> x.DrawText(optionsDescription, txt, brush)|>ignore)
-        
-        image
+
+        image.Mutate(fun x -> x.DrawText(optionsDescription, card.description, brush) |> ignore)
+
+        (card, image)
+
+    let addImage ((card, image): Card * Image) : Card * Image =
+
+        let otherImage = Image.Load(card.image)
+
+        let location = Point(168, 372)
+
+        otherImage.Mutate(fun x -> x.Resize(1051, 1051) |> ignore)
+
+        image.Mutate(fun x -> x.DrawImage(otherImage, location, 1f) |> ignore)
+
+        (card, image)
+
+    let addType ((card, image): Card * Image) : Card * Image = (card, image)
+
+    let addLevels ((card, image): Card * Image) : Card * Image =
 
 
-    let addImage (image: Image) = 
-        
-        let otherImage = Image.Load("./assets/oliver.jpeg")
+        let level =
+            Image.Load(
+                match card.cardType with
+                | CardType.Xyz -> "./assets/Rank.png"
+                | _ -> "./assets/Level.png"
+            )
 
-        let location = Point(168,372)
 
-        otherImage.Mutate(fun x-> x.Resize(1051,1051) |> ignore)
-        
-        image.Mutate(fun x -> x.DrawImage(otherImage, location, 1f)|>ignore)
-        
-        image
+        if card.cardType = CardType.Xyz then
+            for i in 1 .. card.level do
+                let pointW = if i = 1 then 148 else (148 - (level.Width - (95 * i)))
 
-    let putLevels (image: Image) : Image = image
-    
-    let addAttribute (image: Image) = ""
-    
-    let monsterInfo (image: Image) = ""
+                image.Mutate(fun x -> x.DrawImage(level, Point(pointW, 243), 1f) |> ignore)
+
+        else
+            for i in 1 .. card.level do
+                let pointW = if i = 1 then 1169 else (1169 + (level.Width - (95 * i)))
+
+                image.Mutate(fun x -> x.DrawImage(level, Point(pointW, 243), 1f) |> ignore)
+
+
+        (card, image)
+
+
+    let addAttribute ((card, image): Card * Image) : Card * Image = (card, image)
+
+    let addBattleAttr ((card, image): Card * Image) : Card * Image = (card, image)
 
     let handle =
-        let imageTemplate = Image.Load(cardTemplates.[CardType.Spell])
-        genericInfo imageTemplate   
+
+        let card: Card =
+            { name = "Oliver, the boxer"
+              description =
+                "Lorem ipsum dolor sit amet, officia excepteur ex fugiat reprehenderit enim labore culpa sint ad nisi Lorem pariatur mollit ex esse exercitation amet. Nisi anim cupidatat excepteur officia. Reprehenderit nostrud nostrud ipsum Lorem est aliquip amet voluptate voluptate dolor minim nulla est proident. Nostrud officia pariatur ut officia. Sit irure elit esse ea nulla sunt ex occaecat reprehenderit commodo officia dolor Lorem duis laboris cupidatat officia voluptate. Culpa proident "
+              attribute = attributes.Dark
+              level = 8
+              cardType = CardType.Effect
+              image = "./assets/oliver.jpeg"
+              atk = 3200
+              def = 0 }
+
+        let imageTemplate = Image.Load(cardTemplates.[card.cardType])
+
+        genericInfo (card, imageTemplate)
         |> addDescription
         |> addImage
-        |> putLevels 
-        |> (fun x -> x.Save "example.png")
-         
+        |> (fun (card, image) ->
+            if card.cardType <> CardType.Spell && card.cardType <> CardType.Trap then
+                addLevels (card, image) |> addType
+            else
+                (card, image))
+        |> (fun (card, image) -> image.Save("example.png"))
+
         0

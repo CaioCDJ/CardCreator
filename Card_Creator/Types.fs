@@ -28,7 +28,12 @@ module CardTypes =
         { name: string
           description: string
           image: string
-          cardType: CardType}
+          cardType: CardType
+          level: int
+          atk: int
+          def: int
+          attribute: attributes
+        }
 
     // Monsters Types
 
