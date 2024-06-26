@@ -36,7 +36,7 @@ module CardMaker =
     // bigger names for you
     let normalizeName = ""
 
-    let genericInfo ((card, image): Card * Image) : Card * Image =
+    let addTitle ((card, image): Card * Image) : Card * Image =
         //Name and Description type
 
         let font = SystemFonts.CreateFont("Arial", 80f, FontStyle.Regular)
@@ -88,7 +88,6 @@ module CardMaker =
         optionsDescription.VerticalAlignment <- VerticalAlignment.Top
         optionsDescription.HorizontalAlignment <- HorizontalAlignment.Left
 
-
         let brush = Brushes.Solid(Color.Black)
 
         image.Mutate(fun x -> x.DrawText(optionsDescription, card.description, brush) |> ignore)
@@ -107,10 +106,7 @@ module CardMaker =
 
         (card, image)
 
-    let addType ((card, image): Card * Image) : Card * Image = (card, image)
-
     let addLevels ((card, image): Card * Image) : Card * Image =
-
 
         let level =
             Image.Load(
@@ -121,46 +117,103 @@ module CardMaker =
 
 
         if card.cardType = CardType.Xyz then
-            for i in 1 .. card.level do
+            for i in 1 .. card.monster.Value.level do
                 let pointW = if i = 1 then 148 else (148 - (level.Width - (95 * i)))
 
                 image.Mutate(fun x -> x.DrawImage(level, Point(pointW, 243), 1f) |> ignore)
 
         else
-            for i in 1 .. card.level do
+            for i in 1 .. card.monster.Value.level do
                 let pointW = if i = 1 then 1169 else (1169 + (level.Width - (95 * i)))
 
                 image.Mutate(fun x -> x.DrawImage(level, Point(pointW, 243), 1f) |> ignore)
 
+        (card, image)
+
+
+    let addType ((card, image): Card * Image) : Card * Image =
+
+        let textType = $"[{card.monster.Value.Type}]"
+
+        let font = SystemFonts.CreateFont("Arial", 45f, FontStyle.Bold)
+        let optionsType = RichTextOptions(font)
+
+        optionsType.Origin <- PointF(107f, 1528f)
+        optionsType.WordBreaking <- WordBreaking.Standard
+        optionsType.WrappingLength <- 1165f
+        optionsType.TextJustification <- TextJustification.InterWord
+        optionsType.VerticalAlignment <- VerticalAlignment.Top
+        optionsType.HorizontalAlignment <- HorizontalAlignment.Left
+
+        let brush = Brushes.Solid(Color.Black)
+
+        image.Mutate(fun x -> x.DrawText(optionsType, textType, brush) |> ignore)
 
         (card, image)
 
 
-    let addAttribute ((card, image): Card * Image) : Card * Image = (card, image)
+    let addAttribute ((card, image): Card * Image) : Card * Image =
 
-    let addBattleAttr ((card, image): Card * Image) : Card * Image = (card, image)
+        let attrImg = Image.Load(attributeAssets.[card.monster.Value.atribute])
+
+        attrImg.Mutate(fun x -> x.Resize(131, 131) |> ignore)
+
+        image.Mutate(fun x -> x.DrawImage(attrImg, Point(1162, 88), 1f) |> ignore)
+        
+        (card, image)
+
+    let addBattleAttr ((card, image): Card * Image) : Card * Image =
+
+        let font = SystemFonts.CreateFont("Arial", 52f, FontStyle.Bold)
+
+        let optionsAttribute = RichTextOptions(font)
+
+        optionsAttribute.Origin <- PointF(884f, 1849f)
+        optionsAttribute.WordBreaking <- WordBreaking.Standard
+        optionsAttribute.WrappingLength <- 1165f
+        optionsAttribute.TextJustification <- TextJustification.InterWord
+        optionsAttribute.VerticalAlignment <- VerticalAlignment.Top
+        optionsAttribute.HorizontalAlignment <- HorizontalAlignment.Left
+
+        let brush = Brushes.Solid(Color.Black)
+
+        image.Mutate(fun x ->
+            x.DrawText(optionsAttribute, card.monster.Value.attack.ToString(), brush)
+            |> ignore)
+
+        optionsAttribute.Origin <- PointF(1159f, 1849f)
+
+        image.Mutate(fun x ->
+            x.DrawText(optionsAttribute, card.monster.Value.defence.ToString(), brush)
+            |> ignore)
+
+        (card, image)
 
     let handle =
 
+        let monster: CardTypes.Monster =
+            { defence = 1500
+              attack = 2200
+              level = 5
+              atribute = attributes.Light
+              Type = "Boxer" }
+
         let card: Card =
-            { name = "Oliver, the boxer"
+            { name = "Oliver, the glutton"
               description =
-                "Lorem ipsum dolor sit amet, officia excepteur ex fugiat reprehenderit enim labore culpa sint ad nisi Lorem pariatur mollit ex esse exercitation amet. Nisi anim cupidatat excepteur officia. Reprehenderit nostrud nostrud ipsum Lorem est aliquip amet voluptate voluptate dolor minim nulla est proident. Nostrud officia pariatur ut officia. Sit irure elit esse ea nulla sunt ex occaecat reprehenderit commodo officia dolor Lorem duis laboris cupidatat officia voluptate. Culpa proident "
-              attribute = attributes.Dark
-              level = 8
+                "This card cannot be effected by insect monsters; (quick) if a water monster activate its effect, banish this card."
               cardType = CardType.Effect
               image = "./assets/oliver.jpeg"
-              atk = 3200
-              def = 0 }
+              monster = Some monster }
 
         let imageTemplate = Image.Load(cardTemplates.[card.cardType])
 
-        genericInfo (card, imageTemplate)
+        addTitle (card, imageTemplate)
         |> addDescription
         |> addImage
         |> (fun (card, image) ->
             if card.cardType <> CardType.Spell && card.cardType <> CardType.Trap then
-                addLevels (card, image) |> addType
+                addLevels (card, image) |> addType |> addBattleAttr |> addAttribute
             else
                 (card, image))
         |> (fun (card, image) -> image.Save("example.png"))
