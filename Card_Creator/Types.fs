@@ -15,7 +15,6 @@ module CardTypes =
         | Spell
         | Trap
 
-
     type attributes =
         | Fire
         | Water

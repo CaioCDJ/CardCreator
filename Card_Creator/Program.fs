@@ -1,6 +1,8 @@
 ﻿namespace CounterApp
 
 open Avalonia
+open Avalonia.Media
+open Avalonia.Media.Imaging
 open Avalonia.Controls.ApplicationLifetimes
 open Avalonia.Themes.Fluent
 open Avalonia.FuncUI.Hosts
@@ -8,10 +10,36 @@ open Avalonia.Controls
 open Avalonia.FuncUI
 open Avalonia.FuncUI.DSL
 open Avalonia.Layout
+open Avalonia.Platform
+open Avalonia.Platform.Storage
+open Avalonia.Threading
 open Card_Creator.CardTypes
 open Card_Creator.Components
 
+
+type State =
+    { isVisible: bool
+      name: string
+      cardType: CardType
+      attack: uint
+      defence: uint
+      level: uint
+      atribute: attributes
+      SpellType: string
+     }
+
+type Msg =
+    | SetName of string
+    | SetCardType of CardType
+    | SetAttack of uint
+    | SetDefence of uint
+    | SetLevel of uint
+    | SetAtribute of attributes
+    | SetSpellType of string
+
+
 module Main =
+    open System
 
     let typesString =[
         "Normal";
@@ -26,47 +54,84 @@ module Main =
         "Trap";
     ]
 
-    let monsterTypesStr = [
-        "Aqua"
-        "Beast"
-        "Bird"
-        "Bug"
-        "Dragon"
-        "Fairy"
-        "Fiend"
-        "Fish"
-        "Insect"
-        "Machine"
-        "Plant"
-        "Psychic"
-        "Pyro"
-        "Reptile"
-        "Rock"
-        "Sea Serpent"
-        "Spellcaster"
-        "Thunder"
-        "Warrior"
-        "Winged Beast"
-        "Zombie"
-    ]
+    let filter = FilePickerOpenOptions(
+        AllowMultiple = false
+        )
 
     let view () =
         Component(fun ctx -> Grid.create [ 
-            
+               
             // let CardInfo = ctx.useState 
             let selectedCardType = ctx.useState ""
             let selectedMonsterType = ctx.useState ""
+            let isVisible = ctx.useState false
             
-            let monsterVisible = ctx.useState false
+            let name = ctx.useState ""
+            let cardType = ctx.useState ""
+            let attack = ctx.useState 0
+            let defence = ctx.useState 0
+            let level = ctx.useState 0
+            let atribute = ctx.useState ""
+            let spellType = ctx.useState ""
+            let imgPath = ctx.useState ""
+
+            let setName = fun x -> name.Set x
+            let setCardType = fun x -> 
+                selectedCardType.Set typesString.[ if x <= 0 then 0 else x ]
+                isVisible.Set (
+                    if selectedCardType.Current <> "Spell" && selectedCardType.Current <> "Trap" then true else     false
+                ) 
+
+            let setAttack = fun x -> attack.Set x
+            let setDefence = fun x -> defence.Set x
+            let setLevel = fun x -> level.Set x
+            let setAtribute = fun x -> atribute.Set x
+            let setSpellType = fun x -> spellType.Set x
+           
+            let top = TopLevel.GetTopLevel ctx.control
+            
+            let openFile() = 
+                async{
+                    let filter = FilePickerFileType("Image types")
+                    filter.Patterns <- [|"*.png";"*.jpeg";"*.jpg"|]
+
+                    let options = FilePickerOpenOptions(
+                        AllowMultiple = false  ,
+                        Title = "Select an image",
+                        FileTypeFilter = [|filter|]
+                        )
+
+                    let! file = 
+                        top.StorageProvider.OpenFilePickerAsync(options)
+                        |>Async.AwaitTask 
+
+                    printfn $"{file.[0].Path}"
+                }
+            
+            let imagePath _ =
+                openFile()
+                |>Async.StartImmediate
+
+            let saveCard = fun _ -> (printfn $"{name.Current}")
+
+            let aaa = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/cardTemplates/Normal.jpeg")))
+            let brush = new ImageBrush(aaa)
 
             Grid.columnDefinitions "*,*"
             Grid.children [ 
                 Border.create[
                     Border.column 0
-                    Border.borderThickness(Thickness(10))
-                    Border.child(TextBlock.create [
-                        TextBlock.text "test"                        
+                    Border.borderThickness(Thickness(50))
+                    Border.onPointerPressed imagePath
+                    Border.child(Grid.create[
+                        Grid.height 500
+                        // Grid.background Media.Brushes.MediumSlateBlue
+                        Grid.background  brush
+                        Grid.children [
+                           
+                        ]
                     ])
+
                 ] 
 
                 Border.create [
@@ -84,6 +149,7 @@ module Main =
                                     Border.column 0
                                     Border.child(
                                         Labeling("Name:", TextBox.create [ 
+                                            TextBox.onTextChanged(setName)
                                      ]))
                                     ]
                                     Border.create [ 
@@ -92,16 +158,9 @@ module Main =
                                        Labeling("Type:", 
                                             ComboBox.create [
                                                 ComboBox.minWidth(200)
-                                                ComboBox.onSelectedIndexChanged(fun x -> 
-                                                    selectedCardType.Set typesString.[ 
-                                                        if x <= 0 then 0 else x
-                                                    ] 
-                                                    monsterVisible.Set (
-                                                        if selectedCardType.Current <> "Spell" && selectedCardType.Current <> "Trap" then true else false
-                                                    )
-                                                ) 
+                                                ComboBox.onSelectedIndexChanged(setCardType) 
                                                 ComboBox.dataItems typesString
-                                        ]
+                                            ]
                                         )
                                      )
                                 ] 
@@ -110,18 +169,15 @@ module Main =
 
                              // Monsters
                             Grid.create [
-                                Grid.isVisible monsterVisible.Current
+                                Grid.isVisible isVisible.Current
                                 Grid.columnDefinitions "*,*"
                                 Grid.children [ 
-                                    LabelingCol("Monster Type",ComboBox.create[
-                                        ComboBox.minWidth(200)
-                                        ComboBox.onSelectedIndexChanged(fun x -> selectedMonsterType.Set monsterTypesStr.[
-                                            if x <= 0 then 0 else x
-                                        ])
-                                        ComboBox.dataItems monsterTypesStr
-                                    ],0)
+                                    LabelingCol("Monster Type", TextBox.create [
+                                        TextBox.onTextChanged(setSpellType)
+                                    ] ,0)
 
                                     LabelingCol("Level/Rank:", ComboBox.create[
+                                        ComboBox.onSelectedIndexChanged(setLevel)
                                         ComboBox.dataItems [
                                             "1"
                                             "2"
@@ -141,10 +197,11 @@ module Main =
                             ]
                           
                             Border.create [
-                                Border.isVisible(not monsterVisible.Current)
+                                Border.isVisible(not isVisible.Current)
                                 Border.child(
                                     Labeling("Spell Type", ComboBox.create [
-                                    ComboBox.isVisible (not monsterVisible.Current)
+                                        // ComboBox.onSelectedIndexChanged(setSpellType)
+                                    ComboBox.isVisible (not isVisible.Current)
                                     ComboBox.dataItems [
                                         "Normal";
                                         "Quick";
@@ -162,6 +219,11 @@ module Main =
                             Labeling("Description:", TextBox.create [ 
                                 TextBox.minHeight(100)
                             ])
+
+                            Button.create [
+                                Button.content "Save card"
+                                Button.onClick saveCard
+                            ]
                         ]
                     ])
                 ]
@@ -194,9 +256,9 @@ module Program =
 
     [<EntryPoint>]
     let main (args: string[]) =
-        Card_Creator.CardMaker.handle
-        // AppBuilder
-        //     .Configure<App>()
-        //     .UsePlatformDetect()
-        //     .UseSkia()
-        //     .StartWithClassicDesktopLifetime(args)
+        // Card_Creator.CardMaker.handle
+        AppBuilder
+            .Configure<App>()
+            .UsePlatformDetect()
+            .UseSkia()
+            .StartWithClassicDesktopLifetime(args)

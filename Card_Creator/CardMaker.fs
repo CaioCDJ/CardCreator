@@ -189,7 +189,7 @@ module CardMaker =
 
         (card, image)
 
-    let handle =
+    let handle (cd:Card option) =
 
         let monster: CardTypes.Monster =
             { defence = 1500
