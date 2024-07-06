@@ -105,7 +105,8 @@ module Main =
                         top.StorageProvider.OpenFilePickerAsync(options)
                         |>Async.AwaitTask 
 
-                    printfn $"{file.[0].Path}"
+                    // printfn $"{file.[0].Path}"
+                    0
                 }
             
             let imagePath _ =
@@ -116,6 +117,8 @@ module Main =
 
             let aaa = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/cardTemplates/Normal.jpeg")))
             let brush = new ImageBrush(aaa)
+            let attr = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/attributes/FIRE.png")))
+            let level = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/Level.png")))
 
             Grid.columnDefinitions "*,*"
             Grid.children [ 
@@ -125,14 +128,90 @@ module Main =
                     Border.onPointerPressed imagePath
                     Border.child(Grid.create[
                         Grid.height 500
+                        Grid.width 300
+                        Grid.rowDefinitions "60,20,250,100,*"
                         // Grid.background Media.Brushes.MediumSlateBlue
                         Grid.background  brush
-                        Grid.children [
-                           
+                        Grid.children [   
+                            Grid.create[
+                                Grid.row 0
+                                Grid.width 300
+                                Grid.height 20
+                                Grid.margin (Thickness(25,54,19,0))
+                                Grid.columnDefinitions "176,*"
+                                Grid.children [
+                                    // Card Name
+                                    TextBlock.create[
+                                        TextBlock.column 0
+                                        TextBlock.text "Oliver o Boxer"
+                                        TextBlock.margin(Thickness(0,2))
+                                        TextBlock.fontSize 18
+                                        TextBlock.horizontalAlignment HorizontalAlignment.Left
+                                    ]
+
+                                    // Card Attribute
+                                    Image.create [ 
+                                        Image.column 1
+                                        Image.source attr
+                                        // Image.margin(25,55)
+                                        Image.height 30
+                                    ]
+                                ]
+                            ]
+                            // Card Level 12 levels
+                            Grid.create[
+                                Grid.row 1
+                                Grid.width 300
+                                Grid.height 10
+                                Grid.columnDefinitions "*,*,*,*,*,*,*,*,*,*,*,*"
+                                Grid.margin (Thickness(0, 13,0,0))
+                                Grid.children [
+                                    Image.create [ 
+                                        Image.column 0
+                                        Image.source level
+                                        Image.height 20
+                                    ]
+
+                                ]
+                            ]
+                            
+                            Grid.create [
+                                Grid.row 2
+                                Grid.height 250
+                                Grid.width 300
+                                Grid.opacity 0.9
+                                Grid.children[ 
+                                    Border.create[
+                                        Border.borderThickness(Thickness(14,13,55,8))
+                                        Border.width 300
+                                        Border.child(
+                                            Image.create[
+                                                Image.stretch Stretch.Fill
+                                                Image.source (new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/oliver.jpeg"))))
+                                            ]
+                                        )
+                                    ]
+                                ]
+                            ]
+
+                            Grid.create [
+                                Grid.row 3
+                                Grid.height 35
+                                // Grid.background Media.Brushes.MediumTurquoise
+                            ]
+
+                            Grid.create[ 
+                                Grid.row 4
+                                Grid.height 35
+                                // Grid.background Media.Brushes.Tan
+                            ]
                         ]
                     ])
 
                 ] 
+
+
+                // Right side - Form
 
                 Border.create [
                     Border.column 1
