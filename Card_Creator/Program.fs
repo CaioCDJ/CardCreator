@@ -49,9 +49,18 @@ module Main =
         "Link";
         "Ritual";
         "Xyz";
-        "Pendulum";
+       // "Pendulum";
         "Spell"
         "Trap";
+    ]
+    
+    let attributes = [
+        "Dark"
+        "Earth"
+        "Light"
+        "Water"
+        "Wind"
+        "Fire"
     ]
 
     let filter = FilePickerOpenOptions(
@@ -60,34 +69,56 @@ module Main =
 
     let view () =
         Component(fun ctx -> Grid.create [ 
-               
+            
             // let CardInfo = ctx.useState 
             let selectedCardType = ctx.useState ""
             let selectedMonsterType = ctx.useState ""
             let isVisible = ctx.useState false
-            
+            let preview = ctx.useState false
             let name = ctx.useState ""
             let cardType = ctx.useState ""
-            let attack = ctx.useState 0
-            let defence = ctx.useState 0
+            let description = ctx.useState ""
+            let attack = ctx.useState ""
+            let defence = ctx.useState ""
             let level = ctx.useState 0
             let atribute = ctx.useState ""
             let spellType = ctx.useState ""
             let imgPath = ctx.useState ""
 
-            let setName = fun x -> name.Set x
+            let setCardTypeTemplate (currentTemplate: string) =
+                let templatePath = TemplateAssets.[ toEnum currentTemplate ]
+                let file = new Bitmap(AssetLoader.Open(Uri(templatePath)))
+                new ImageBrush(file)
+            
+            let setMonsterAttr (x: string) = 
+                let atr = attributesAssets.[attrToEnum x]
+                new Bitmap(AssetLoader.Open(Uri(atr)))
+
+            let cardBrush =ctx.useState( setCardTypeTemplate("Effect"))
+           
+            let attributesImage = ctx.useState( setMonsterAttr("Fire"))
+            
             let setCardType = fun x -> 
                 selectedCardType.Set typesString.[ if x <= 0 then 0 else x ]
                 isVisible.Set (
                     if selectedCardType.Current <> "Spell" && selectedCardType.Current <> "Trap" then true else     false
                 ) 
+                preview.Set( not (String.IsNullOrWhiteSpace(selectedCardType.Current)) && x <> -1)
+                cardBrush.Set(setCardTypeTemplate selectedCardType.Current)
+            
+            let setAtribute  = fun x -> 
+                atribute.Set attributes.[ if x <= 0 then 0 else x ]
+                attributesImage.Set (setMonsterAttr atribute.Current)
 
+
+            let setName = fun x -> name.Set x
             let setAttack = fun x -> attack.Set x
             let setDefence = fun x -> defence.Set x
             let setLevel = fun x -> level.Set x
-            let setAtribute = fun x -> atribute.Set x
+            let setAttack = fun x -> attack.Set x
+            let setDefence = fun x -> defence.Set x
             let setSpellType = fun x -> spellType.Set x
-           
+            let setDescription = fun x -> description.Set x
             let top = TopLevel.GetTopLevel ctx.control
             
             let openFile() = 
@@ -104,34 +135,33 @@ module Main =
                     let! file = 
                         top.StorageProvider.OpenFilePickerAsync(options)
                         |>Async.AwaitTask 
-
+                    
                     // printfn $"{file.[0].Path}"
-                    0
+                    file
                 }
             
-            let imagePath _ =
-                openFile()
-                |>Async.StartImmediate
+            let setImagePath _ =
+                let file = openFile() |>Async.StartImmediate
+                imgPath.Set (file.ToString())
 
-            let saveCard = fun _ -> (printfn $"{name.Current}")
-
-            let aaa = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/cardTemplates/Normal.jpeg")))
-            let brush = new ImageBrush(aaa)
             let attr = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/attributes/FIRE.png")))
-            let level = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/Level.png")))
+            let levelBitmap = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/Level.png")))
+
 
             Grid.columnDefinitions "*,*"
-            Grid.children [ 
-                Border.create[
+            Grid.children [                           
+                Border.create [
                     Border.column 0
+                    Border.isVisible preview.Current
+                    Border.isEnabled preview.Current
                     Border.borderThickness(Thickness(50))
-                    Border.onPointerPressed imagePath
+                    Border.onPointerPressed setImagePath
                     Border.child(Grid.create[
                         Grid.height 500
                         Grid.width 300
-                        Grid.rowDefinitions "60,20,250,100,*"
+                        Grid.rowDefinitions "60,20,250,130"
                         // Grid.background Media.Brushes.MediumSlateBlue
-                        Grid.background  brush
+                        Grid.background cardBrush.Current
                         Grid.children [   
                             Grid.create[
                                 Grid.row 0
@@ -143,7 +173,7 @@ module Main =
                                     // Card Name
                                     TextBlock.create[
                                         TextBlock.column 0
-                                        TextBlock.text "Oliver o Boxer"
+                                        TextBlock.text name.Current
                                         TextBlock.margin(Thickness(0,2))
                                         TextBlock.fontSize 18
                                         TextBlock.horizontalAlignment HorizontalAlignment.Left
@@ -152,26 +182,29 @@ module Main =
                                     // Card Attribute
                                     Image.create [ 
                                         Image.column 1
-                                        Image.source attr
+                                        Image.source attributesImage.Current 
+                                        Image.isVisible isVisible.Current
                                         // Image.margin(25,55)
                                         Image.height 30
                                     ]
                                 ]
                             ]
                             // Card Level 12 levels
-                            Grid.create[
+                            Grid.create [
                                 Grid.row 1
+                                Grid.isVisible isVisible.Current
                                 Grid.width 300
                                 Grid.height 10
-                                Grid.columnDefinitions "*,*,*,*,*,*,*,*,*,*,*,*"
-                                Grid.margin (Thickness(0, 13,0,0))
+                                Grid.horizontalAlignment  (if cardType.Current = "Xyz" then HorizontalAlignment.Right else HorizontalAlignment.Left)
+                                Grid.columnDefinitions "20,20,20,20,20,20,20,20,20,20,20,20"
+                                Grid.margin (Thickness(20, 15,0,0))
                                 Grid.children [
-                                    Image.create [ 
-                                        Image.column 0
-                                        Image.source level
-                                        Image.height 20
-                                    ]
-
+                                    for i in 0.. level.Current do
+                                        Image.create[
+                                            Image.column (12 - i - 1)
+                                            Image.height 20
+                                            Image.source levelBitmap
+                                        ]
                                 ]
                             ]
                             
@@ -182,7 +215,7 @@ module Main =
                                 Grid.opacity 0.9
                                 Grid.children[ 
                                     Border.create[
-                                        Border.borderThickness(Thickness(14,13,55,8))
+                                        Border.borderThickness(Thickness(14,12,56,8))
                                         Border.width 300
                                         Border.child(
                                             Image.create[
@@ -196,14 +229,54 @@ module Main =
 
                             Grid.create [
                                 Grid.row 3
-                                Grid.height 35
-                                // Grid.background Media.Brushes.MediumTurquoise
-                            ]
+                                // Grid.height 35
+                                Grid.margin(Thickness(24,10,68,20))
+                                Grid.rowDefinitions "10,*,33"
+                                Grid.children [
+                                    TextBlock.create [
+                                        TextBlock.row 0
+                                        TextBlock.fontWeight FontWeight.Bold
+                                        TextBlock.foreground Media.Brushes.Black
+                                        TextBlock.fontSize 10
+                                        TextBlock.text $"[{spellType.Current}]"
+                                    ]
+                                    TextBlock.create [ 
+                                        TextBlock.row 1
+                                        TextBlock.width 258
+                                        TextBlock.margin(0,2,0,0)
+                                        TextBlock.foreground Media.Brushes.Black
+                                        TextBlock.fontSize 10
+                                        TextBlock.lineHeight 11
+                                        TextBlock.textAlignment TextAlignment.Justify
+                                        TextBlock.textWrapping Avalonia.Media.TextWrapping.Wrap
+                                        TextBlock.text description.Current
+                                    ]
 
-                            Grid.create[ 
-                                Grid.row 4
-                                Grid.height 35
-                                // Grid.background Media.Brushes.Tan
+                                    StackPanel.create [
+                                        StackPanel.row 2
+                                        StackPanel.opacity 0.8
+                                        StackPanel.margin(Thickness(165,0,0,0))
+                                        // StackPanel.background Media.Brushes.MediumSlateBlue
+                                        StackPanel.orientation Orientation.Horizontal
+                                        StackPanel.children [
+                                            TextBlock.create [
+                                                TextBlock.foreground Media.Brushes.Black
+                                                TextBlock.fontSize 12
+                                                TextBlock.margin(Thickness(5,0,0,0))
+                                                TextBlock.fontWeight FontWeight.Bold
+                                                TextBlock.text attack.Current
+                                            ]
+                                            TextBlock.create [
+                                                TextBlock.foreground Media.Brushes.Black
+                                                TextBlock.fontSize 12
+                                                TextBlock.margin(Thickness(30,0,0,0))
+                                                TextBlock.fontWeight FontWeight.Bold
+                                                TextBlock.text defence.Current
+                                            ]
+                                        ]
+                                    ]
+                                ]
+
                             ]
                         ]
                     ])
@@ -245,6 +318,11 @@ module Main =
                                 ] 
                                 ]
                             ]
+                            
+                            Labeling("Attribute:", ComboBox.create[
+                                ComboBox.onSelectedIndexChanged setAtribute 
+                                ComboBox.dataItems attributes
+                            ])
 
                              // Monsters
                             Grid.create [
@@ -274,6 +352,20 @@ module Main =
                                     ],1)
                                 ]
                             ]
+
+                            Grid.create [ 
+                                Grid.isVisible isVisible.Current
+                                Grid.columnDefinitions "*,*"
+                                Grid.children [ 
+                                    LabelingCol("Attack:", TextBox.create [
+                                       TextBox.onTextChanged setAttack
+                                    ],0)
+
+                                    LabelingCol("Defense:", TextBox.create [
+                                       TextBox.onTextChanged setDefence
+                                    ],1)
+                                ]
+                            ]
                           
                             Border.create [
                                 Border.isVisible(not isVisible.Current)
@@ -293,10 +385,14 @@ module Main =
                                     ]) 
                                 )
                             ]
-                    
+                            
+
                             // imutavel
                             Labeling("Description:", TextBox.create [ 
                                 TextBox.minHeight(100)
+                                TextBox.acceptsReturn true
+                                TextBox.textWrapping TextWrapping.Wrap
+                                TextBox.onTextChanged(setDescription)
                             ])
 
                             Button.create [
