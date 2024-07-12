@@ -191,31 +191,32 @@ module CardMaker =
 
     let handle (cd:Card option) =
 
-        let monster: CardTypes.Monster =
-            { defence = 1500
-              attack = 2200
-              level = 5
-              atribute = attributes.Light
-              Type = "Boxer" }
+        // let monster: CardTypes.Monster =
+        //     { defence = 1500
+        //       attack = 2200
+        //       level = 5
+        //       atribute = attributes.Light
+        //       Type = "Boxer" }
+        //
+        // let card: Card =
+        //     { name = "Oliver, the glutton"
+        //       description =
+        //         "This card cannot be effected by insect monsters; (quick) if a water monster activate its effect, banish this card."
+        //       cardType = CardType.Effect
+        //       image = "./assets/oliver.jpeg"
+        //       monster = Some monster }
+        
+        if not (cd.IsNone) then
 
-        let card: Card =
-            { name = "Oliver, the glutton"
-              description =
-                "This card cannot be effected by insect monsters; (quick) if a water monster activate its effect, banish this card."
-              cardType = CardType.Effect
-              image = "./assets/oliver.jpeg"
-              monster = Some monster }
+            let imageTemplate = Image.Load(cardTemplates.[cd.Value.cardType])
 
-        let imageTemplate = Image.Load(cardTemplates.[card.cardType])
+            addTitle (cd.Value, imageTemplate)
+            |> addDescription
+            |> addImage
+            |> (fun (card, image) ->
+                if card.cardType <> CardType.Spell && card.cardType <> CardType.Trap then
+                    addLevels (card, image) |> addType |> addBattleAttr |> addAttribute
+                else
+                    (card, image))
+            |> (fun (card, image) -> image.Save($"{cd.Value.name}.png"))
 
-        addTitle (card, imageTemplate)
-        |> addDescription
-        |> addImage
-        |> (fun (card, image) ->
-            if card.cardType <> CardType.Spell && card.cardType <> CardType.Trap then
-                addLevels (card, image) |> addType |> addBattleAttr |> addAttribute
-            else
-                (card, image))
-        |> (fun (card, image) -> image.Save("example.png"))
-
-        0

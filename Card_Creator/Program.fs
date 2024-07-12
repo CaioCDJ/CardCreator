@@ -16,7 +16,6 @@ open Avalonia.Threading
 open Card_Creator.CardTypes
 open Card_Creator.Components
 
-
 type State =
     { isVisible: bool
       name: string
@@ -93,11 +92,19 @@ module Main =
             let setMonsterAttr (x: string) = 
                 let atr = attributesAssets.[attrToEnum x]
                 new Bitmap(AssetLoader.Open(Uri(atr)))
+            
+            let setCardImage (x: Uri option) =
+                if x.IsSome then
+                    new Bitmap(x.Value.AbsolutePath)
+                else 
+                    new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/oliver.jpeg")))
 
             let cardBrush =ctx.useState( setCardTypeTemplate("Effect"))
            
             let attributesImage = ctx.useState( setMonsterAttr("Fire"))
             
+            let cardImage = ctx.useState( setCardImage None)
+
             let setCardType = fun x -> 
                 selectedCardType.Set typesString.[ if x <= 0 then 0 else x ]
                 isVisible.Set (
@@ -137,17 +144,43 @@ module Main =
                         |>Async.AwaitTask 
                     
                     // printfn $"{file.[0].Path}"
-                    file
+                    if file.Count > 0 then
+                        let fileUri = file.[0].Path
+                        imgPath.Set (fileUri.AbsolutePath)
+                        cardImage.Set (setCardImage (Some fileUri))
+
                 }
             
+
             let setImagePath _ =
-                let file = openFile() |>Async.StartImmediate
-                imgPath.Set (file.ToString())
+                openFile() 
+                |>Async.StartImmediate
+                // imgPath.Set (file.ToString())
 
             let attr = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/attributes/FIRE.png")))
             let levelBitmap = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/Level.png")))
 
+            let saveCard = fun x ->
+                
+                let monster:Monster = {
+                    attack = attack.Current|> int
+                    defence =  defence.Current|> int
+                    level =  level.Current|> int
+                    atribute = attrToEnum atribute.Current
+                    Type = spellType.Current
+                }
 
+                let card:Card = {
+                    name = name.Current
+                    description = description.Current
+                    cardType = toEnum selectedCardType.Current
+                    image = imgPath.Current
+                    monster = Some monster
+                }
+
+                Card_Creator.CardMaker.handle (Some card)
+                
+                
             Grid.columnDefinitions "*,*"
             Grid.children [                           
                 Border.create [
@@ -157,10 +190,10 @@ module Main =
                     Border.borderThickness(Thickness(50))
                     Border.onPointerPressed setImagePath
                     Border.child(Grid.create[
+                        Grid.tip "Select Image"
                         Grid.height 500
                         Grid.width 300
-                        Grid.rowDefinitions "60,20,250,130"
-                        // Grid.background Media.Brushes.MediumSlateBlue
+                        Grid.rowDefinitions "60,20,250,130,*"
                         Grid.background cardBrush.Current
                         Grid.children [   
                             Grid.create[
@@ -220,7 +253,7 @@ module Main =
                                         Border.child(
                                             Image.create[
                                                 Image.stretch Stretch.Fill
-                                                Image.source (new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/oliver.jpeg"))))
+                                                Image.source cardImage.Current
                                             ]
                                         )
                                     ]
@@ -276,13 +309,19 @@ module Main =
                                         ]
                                     ]
                                 ]
-
+                            ]
+                            Button.create [ 
+                                Button.row 4
+                                Button.content "Select an image"
+                                Button.verticalContentAlignment VerticalAlignment.Center
+                                Button.horizontalContentAlignment HorizontalAlignment.Center
+                                Button.width 300
+                                Button.onClick setImagePath
                             ]
                         ]
                     ])
-
+                   
                 ] 
-
 
                 // Right side - Form
 
