@@ -23,12 +23,23 @@ module CardTypes =
         | Light
         | Dark
 
+    type LinkArrows =
+        { left: bool
+          right: bool
+          top: bool
+          bottom: bool
+          topLeft: bool
+          topRight: bool
+          bottomLeft: bool
+          bottomRight: bool }
+
     type Monster =
         { attack: int
           defence: int
           level: int
           atribute: attributes
-          Type: string }
+          Type: string
+          linkArrows: LinkArrows option }
 
 
     type Card =
@@ -37,6 +48,7 @@ module CardTypes =
           image: string
           cardType: CardType
           monster: Monster option }
+
 
     let TemplateAssets =
         Map
@@ -64,7 +76,7 @@ module CardTypes =
         | "Trap" -> CardType.Trap
         | _ -> CardType.Normal
 
-    let attributesAssets = 
+    let attributesAssets =
         Map
             [ attributes.Fire, "avares://Card_Creator/assets/attributes/FIRE.png"
               attributes.Water, "avares://Card_Creator/assets/attributes/WATER.png"
@@ -82,3 +94,9 @@ module CardTypes =
         | "Light" -> attributes.Light
         | "Dark" -> attributes.Dark
         | _ -> attributes.Fire
+
+    let arrowAsset (diagonal: bool) : string =
+        if diagonal then
+            "./assets/arrowDiagonal.png"
+        else
+            "./assets/arrow.png"

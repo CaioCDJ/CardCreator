@@ -168,6 +168,7 @@ module Main =
                     level =  level.Current|> int
                     atribute = attrToEnum atribute.Current
                     Type = spellType.Current
+                    linkArrows = None
                 }
 
                 let card:Card = {
@@ -268,6 +269,7 @@ module Main =
                                 Grid.children [
                                     TextBlock.create [
                                         TextBlock.row 0
+                                        TextBlock.isVisible isVisible.Current
                                         TextBlock.fontWeight FontWeight.Bold
                                         TextBlock.foreground Media.Brushes.Black
                                         TextBlock.fontSize 10
@@ -359,13 +361,14 @@ module Main =
                             ]
                             
                             Labeling("Attribute:", ComboBox.create[
+                                ComboBox.isVisible isVisible.Current
                                 ComboBox.onSelectedIndexChanged setAtribute 
                                 ComboBox.dataItems attributes
                             ])
 
                              // Monsters
                             Grid.create [
-                                Grid.isVisible isVisible.Current
+                                Grid.isVisible isVisible.Current 
                                 Grid.columnDefinitions "*,*"
                                 Grid.children [ 
                                     LabelingCol("Monster Type", TextBox.create [
@@ -470,7 +473,8 @@ module Program =
 
     [<EntryPoint>]
     let main (args: string[]) =
-        // Card_Creator.CardMaker.handle
+        // Card_Creator.CardMaker.testHandle
+        // 0
         AppBuilder
             .Configure<App>()
             .UsePlatformDetect()

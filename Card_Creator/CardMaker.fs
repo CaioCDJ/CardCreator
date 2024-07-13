@@ -159,7 +159,7 @@ module CardMaker =
         attrImg.Mutate(fun x -> x.Resize(131, 131) |> ignore)
 
         image.Mutate(fun x -> x.DrawImage(attrImg, Point(1162, 88), 1f) |> ignore)
-        
+
         (card, image)
 
     let addBattleAttr ((card, image): Card * Image) : Card * Image =
@@ -183,29 +183,105 @@ module CardMaker =
 
         optionsAttribute.Origin <- PointF(1159f, 1849f)
 
-        image.Mutate(fun x ->
-            x.DrawText(optionsAttribute, card.monster.Value.defence.ToString(), brush)
-            |> ignore)
+        if card.cardType <> CardType.Link then
+            image.Mutate(fun x ->
+                x.DrawText(optionsAttribute, card.monster.Value.defence.ToString(), brush)
+                |> ignore)
 
         (card, image)
 
-    let handle (cd:Card option) =
+    let addArrows ((card, image): Card * Image) : Card * Image =
 
-        // let monster: CardTypes.Monster =
-        //     { defence = 1500
-        //       attack = 2200
-        //       level = 5
-        //       atribute = attributes.Light
-        //       Type = "Boxer" }
-        //
-        // let card: Card =
-        //     { name = "Oliver, the glutton"
-        //       description =
-        //         "This card cannot be effected by insect monsters; (quick) if a water monster activate its effect, banish this card."
-        //       cardType = CardType.Effect
-        //       image = "./assets/oliver.jpeg"
-        //       monster = Some monster }
-        
+        if card.monster.Value.linkArrows.IsSome then
+
+            let arrowD = Image.Load(arrowAsset true)
+            let arrow = Image.Load(arrowAsset false)
+
+            // straight
+            if card.monster.Value.linkArrows.Value.top then
+                image.Mutate(fun x -> x.DrawImage(arrow, Point(559, 299), 1f) |> ignore)
+
+            if card.monster.Value.linkArrows.Value.bottom then
+                arrow.Mutate(fun x -> x.Rotate(180f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrow, Point(559, 1425), 1f) |> ignore)
+
+            if card.monster.Value.linkArrows.Value.left then
+                arrow.Mutate(fun x -> x.Rotate(90f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrow, Point(95, 763), 1f) |> ignore)
+
+            if card.monster.Value.linkArrows.Value.right then
+                arrow.Mutate(fun x -> x.Rotate(180f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrow, Point(1223, 763), 1f) |> ignore)
+
+            // diagonal
+            if card.monster.Value.linkArrows.Value.topLeft then
+                image.Mutate(fun x -> x.DrawImage(arrowD, Point(111, 317), 1f) |> ignore)
+
+            if card.monster.Value.linkArrows.Value.topRight then
+                arrowD.Mutate(fun x -> x.Rotate(90f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrowD, Point(1151, 317), 1f) |> ignore)
+
+            if card.monster.Value.linkArrows.Value.bottomRight then
+                arrowD.Mutate(fun x -> x.Rotate(90f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrowD, Point(1139, 1358), 1f) |> ignore)
+
+            if card.monster.Value.linkArrows.Value.bottomLeft then
+                arrowD.Mutate(fun x -> x.Rotate(90f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrowD, Point(111, 1358), 1f) |> ignore)
+
+            (card, image)
+        else
+            (card, image)
+
+    let addLinkRate ((card, image): Card * Image) : Card * Image =
+        let mutable rate = 0
+
+        if card.monster.Value.linkArrows.IsSome then
+
+            if card.monster.Value.linkArrows.Value.top then
+                rate <- rate + 1
+
+            if card.monster.Value.linkArrows.Value.bottom then
+                rate <- rate + 1
+
+            if card.monster.Value.linkArrows.Value.left then
+                rate <- rate + 1
+
+            if card.monster.Value.linkArrows.Value.right then
+                rate <- rate + 1
+
+            if card.monster.Value.linkArrows.Value.topLeft then
+                rate <- rate + 1
+
+            if card.monster.Value.linkArrows.Value.topRight then
+                rate <- rate + 1
+
+            if card.monster.Value.linkArrows.Value.bottomRight then
+                rate <- rate + 1
+
+            if card.monster.Value.linkArrows.Value.bottomLeft then
+                rate <- rate + 1
+
+            let font = SystemFonts.CreateFont("Arial", 75f, FontStyle.Regular)
+
+            let optionsName = RichTextOptions(font)
+            optionsName.Origin <- PointF(1199f, 1839f)
+            optionsName.TabWidth <- 0.0f
+            optionsName.WordBreaking <- WordBreaking.Standard
+            optionsName.WrappingLength <- 1048f
+            optionsName.HorizontalAlignment <- HorizontalAlignment.Left
+
+            let brush = Brushes.Solid(Color.Black)
+
+            image.Mutate(fun x -> x.DrawText(optionsName, "-"+ rate.ToString(), brush) |> ignore)
+
+            (card, image)
+        else
+            (card, image)
+
+
+    let handle (cd: Card option) =
+
         if not (cd.IsNone) then
 
             let imageTemplate = Image.Load(cardTemplates.[cd.Value.cardType])
@@ -215,8 +291,45 @@ module CardMaker =
             |> addImage
             |> (fun (card, image) ->
                 if card.cardType <> CardType.Spell && card.cardType <> CardType.Trap then
-                    addLevels (card, image) |> addType |> addBattleAttr |> addAttribute
+                    addType (card, image)
+                    |> addBattleAttr
+                    |> addAttribute
+                    |> (fun (card, image) ->
+                        if card.cardType = CardType.Link then
+                            addArrows (card, image) |> addLinkRate
+                        else
+                            addLevels (card, image))
                 else
                     (card, image))
             |> (fun (card, image) -> image.Save($"{cd.Value.name}.png"))
 
+
+    let testHandle =
+
+        let arrows: LinkArrows =
+            { left = true
+              right = false
+              top = false
+              bottom = true
+              topLeft = false
+              topRight = true
+              bottomLeft = true
+              bottomRight = true }
+
+        let monster: CardTypes.Monster =
+            { defence = 1500
+              attack = 2200
+              level = 5
+              atribute = attributes.Fire
+              Type = "Boxer"
+              linkArrows = Some arrows }
+
+        let card: Card =
+            { name = "Oliver, the glutton"
+              description =
+                "This card cannot be effected by insect monsters; (quick) if a water monster activate its effect, banish this card."
+              cardType = CardType.Link
+              image = "./assets/oliver.jpeg"
+              monster = Some monster }
+
+        handle (Some card)
