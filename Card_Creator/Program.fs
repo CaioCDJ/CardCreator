@@ -83,6 +83,16 @@ module Main =
             let atribute = ctx.useState ""
             let spellType = ctx.useState ""
             let imgPath = ctx.useState ""
+            let linkArrows = ctx.useState { 
+                left = false; 
+                right = false; 
+                top = false; 
+                bottom = false; 
+                topLeft = false; 
+                topRight = false; 
+                bottomRight = false; 
+                bottomLeft = false
+            }
 
             let setCardTypeTemplate (currentTemplate: string) =
                 let templatePath = TemplateAssets.[ toEnum currentTemplate ]
@@ -104,12 +114,18 @@ module Main =
             let attributesImage = ctx.useState( setMonsterAttr("Fire"))
             
             let cardImage = ctx.useState( setCardImage None)
-
+            
+            let isLink = ctx.useState false
+            
             let setCardType = fun x -> 
                 selectedCardType.Set typesString.[ if x <= 0 then 0 else x ]
                 isVisible.Set (
                     if selectedCardType.Current <> "Spell" && selectedCardType.Current <> "Trap" then true else     false
                 ) 
+                
+                if selectedCardType.Current = "Link" then
+                    isLink.Set true
+                
                 preview.Set( not (String.IsNullOrWhiteSpace(selectedCardType.Current)) && x <> -1)
                 cardBrush.Set(setCardTypeTemplate selectedCardType.Current)
             
@@ -117,7 +133,20 @@ module Main =
                 atribute.Set attributes.[ if x <= 0 then 0 else x ]
                 attributesImage.Set (setMonsterAttr atribute.Current)
 
-
+            let setLinkArrows(col:int, row:int, chk:bool) =
+                let arrows:LinkArrows = {
+                    left = if (row = 1 && col = 0) then chk else linkArrows.Current.left
+                    right = if (row = 1 && col = 3) then chk else linkArrows.Current.right
+                    top = if (row = 0 && col = 1) then chk else linkArrows.Current.top
+                    bottom = if (row = 3 && col = 1) then chk else linkArrows.Current.bottom
+                    topLeft = if (row = 0 && col = 0) then chk else linkArrows.Current.topLeft
+                    topRight = if (row = 0 && col = 3) then chk else linkArrows.Current.topRight
+                    bottomLeft = if (row = 3 && col = 0) then chk else linkArrows.Current.bottomLeft
+                    bottomRight = if (row = 3 && col = 3) then chk else linkArrows.Current.bottomRight
+                }
+                printfn  $"\n{col},{row}\n"
+                linkArrows.Set arrows
+            
             let setName = fun x -> name.Set x
             let setAttack = fun x -> attack.Set x
             let setDefence = fun x -> defence.Set x
@@ -159,28 +188,41 @@ module Main =
 
             let attr = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/attributes/FIRE.png")))
             let levelBitmap = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/Level.png")))
-
+            
+            let saving = ctx.useState false 
+ 
             let saveCard = fun x ->
-                
-                let monster:Monster = {
-                    attack = attack.Current|> int
-                    defence =  defence.Current|> int
-                    level =  level.Current|> int
-                    atribute = attrToEnum atribute.Current
-                    Type = spellType.Current
-                    linkArrows = None
-                }
+                if not saving.Current  then
+                    saving.Set true
+                    try
+                        let monster:Monster = {
+                            attack = attack.Current|> int
+                            defence =  if isLink.Current then 0 else defence.Current|> int
+                            level =  if isLink.Current then 1 else level.Current|> int
+                            atribute = attrToEnum atribute.Current
+                            Type = spellType.Current
+                            linkArrows = if isLink.Current then Some linkArrows.Current else None
+                            }
 
-                let card:Card = {
-                    name = name.Current
-                    description = description.Current
-                    cardType = toEnum selectedCardType.Current
-                    image = imgPath.Current
-                    monster = Some monster
-                }
+                        let card:Card = {
+                            name = name.Current
+                            description = if String.IsNullOrWhiteSpace(description.Current) then " " else description.Current
+                            cardType = toEnum selectedCardType.Current
+                            image = imgPath.Current
+                            monster = Some monster
+                        }
+                        
+                        printfn $@"top: {linkArrows.Current.top}, bottom: {linkArrows.Current.bottom}, \n 
+                        left:{linkArrows.Current.left}, right: {linkArrows.Current.right} \n
+                        topLeft: {linkArrows.Current.topLeft}, topRight: {linkArrows.Current.topRight}, \n
+                        bottomLeft: {linkArrows.Current.bottomLeft}, bottomRight: {linkArrows.Current.bottomRight}
+                            "
 
-                Card_Creator.CardMaker.handle (Some card)
-                
+                        Card_Creator.CardMaker.handle (Some card)
+                        saving.Set false
+                        // Environment.Exit 0
+                    with
+                    | :? System.DivideByZeroException -> saving.Set false
                 
             Grid.columnDefinitions "*,*"
             Grid.children [                           
@@ -378,6 +420,7 @@ module Main =
                                     LabelingCol("Level/Rank:", ComboBox.create[
                                         ComboBox.onSelectedIndexChanged(setLevel)
                                         ComboBox.dataItems [
+                                            "0"
                                             "1"
                                             "2"
                                             "3"
@@ -394,6 +437,40 @@ module Main =
                                     ],1)
                                 ]
                             ]
+                            
+                            // link Rate
+                            StackPanel.create [
+                                StackPanel.isVisible isLink.Current
+                                StackPanel.horizontalAlignment HorizontalAlignment.Center
+                                StackPanel.verticalAlignment VerticalAlignment.Center
+                                StackPanel.orientation Orientation.Vertical
+                                StackPanel.children [
+                                    TextBlock.create[
+                                        TextBlock.text "Link Rate:"
+                                        TextBlock.fontWeight FontWeight.Bold
+                                        TextBlock.fontSize 12
+                                        TextBlock.margin(Thickness(0,0,0,5))
+
+                                    ]
+                                    Grid.create [ 
+                                        Grid.columnDefinitions "*,*,*"
+                                        Grid.rowDefinitions "*,*,*"
+                                        Grid.children[
+                                            for i in 0..3 do
+                                                for j in 0..3 do
+                                                    if i=1 && j=1 then
+                                                        TextBox.create [TextBox.isVisible false]
+                                                    else
+                                                        CheckBox.create [
+                                                            CheckBox.row i
+                                                            CheckBox.column j
+                                                            CheckBox.onChecked(fun _ -> setLinkArrows(j,i,true))
+                                                            CheckBox.onUnchecked(fun _ -> setLinkArrows(j,i,false))
+                                                        ]
+                                        ]
+                                    ]
+                                ]
+                            ]
 
                             Grid.create [ 
                                 Grid.isVisible isVisible.Current
@@ -405,6 +482,7 @@ module Main =
 
                                     LabelingCol("Defense:", TextBox.create [
                                        TextBox.onTextChanged setDefence
+                                       TextBox.isEnabled (not isLink.Current)
                                     ],1)
                                 ]
                             ]
@@ -440,6 +518,7 @@ module Main =
                             Button.create [
                                 Button.content "Save card"
                                 Button.onClick saveCard
+                                Button.clickMode ClickMode.Release
                             ]
                         ]
                     ])
@@ -453,7 +532,7 @@ type MainWindow() =
     do
         base.Title <- "Yugioh Card Creator"
         base.MinWidth <- 500
-        base.MinHeight <- 500
+        base.MinHeight <- 550
         base.Content <- Main.view ()
 
 
@@ -473,8 +552,6 @@ module Program =
 
     [<EntryPoint>]
     let main (args: string[]) =
-        // Card_Creator.CardMaker.testHandle
-        // 0
         AppBuilder
             .Configure<App>()
             .UsePlatformDetect()

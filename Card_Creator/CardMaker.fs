@@ -199,35 +199,43 @@ module CardMaker =
 
             // straight
             if card.monster.Value.linkArrows.Value.top then
-                image.Mutate(fun x -> x.DrawImage(arrow, Point(559, 299), 1f) |> ignore)
+                let arrowM  = Image.Load(arrowAsset false)
+                image.Mutate(fun x -> x.DrawImage(arrowM, Point(559, 299), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.bottom then
-                arrow.Mutate(fun x -> x.Rotate(180f) |> ignore)
-                image.Mutate(fun x -> x.DrawImage(arrow, Point(559, 1425), 1f) |> ignore)
+                let arrowM  = Image.Load(arrowAsset false)
+                arrowM.Mutate(fun x -> x.Rotate(180f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrowM, Point(559, 1425), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.left then
-                arrow.Mutate(fun x -> x.Rotate(90f) |> ignore)
-                image.Mutate(fun x -> x.DrawImage(arrow, Point(95, 763), 1f) |> ignore)
+                let arrowM  = Image.Load(arrowAsset false)
+                arrowM.Mutate(fun x -> x.Rotate(270f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrowM, Point(95, 763), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.right then
-                arrow.Mutate(fun x -> x.Rotate(180f) |> ignore)
-                image.Mutate(fun x -> x.DrawImage(arrow, Point(1223, 763), 1f) |> ignore)
+                let arrowM  = Image.Load(arrowAsset false)
+                arrowM.Mutate(fun x -> x.Rotate(90f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrowM, Point(1223, 763), 1f) |> ignore)
 
             // diagonal
             if card.monster.Value.linkArrows.Value.topLeft then
+                let arrowM  = Image.Load(arrowAsset true)
                 image.Mutate(fun x -> x.DrawImage(arrowD, Point(111, 317), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.topRight then
-                arrowD.Mutate(fun x -> x.Rotate(90f) |> ignore)
-                image.Mutate(fun x -> x.DrawImage(arrowD, Point(1151, 317), 1f) |> ignore)
+                let arrowM  = Image.Load(arrowAsset true)
+                arrowM.Mutate(fun x -> x.Rotate(90f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrowM, Point(1151, 317), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.bottomRight then
-                arrowD.Mutate(fun x -> x.Rotate(90f) |> ignore)
-                image.Mutate(fun x -> x.DrawImage(arrowD, Point(1139, 1358), 1f) |> ignore)
+                let arrowM  = Image.Load(arrowAsset true)
+                arrowM.Mutate(fun x -> x.Rotate(180f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrowM, Point(1139, 1358), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.bottomLeft then
-                arrowD.Mutate(fun x -> x.Rotate(90f) |> ignore)
-                image.Mutate(fun x -> x.DrawImage(arrowD, Point(111, 1358), 1f) |> ignore)
+                let arrowM  = Image.Load(arrowAsset true)
+                arrowM.Mutate(fun x -> x.Rotate(270f) |> ignore)
+                image.Mutate(fun x -> x.DrawImage(arrowM, Point(111, 1358), 1f) |> ignore)
 
             (card, image)
         else
@@ -283,7 +291,7 @@ module CardMaker =
     let handle (cd: Card option) =
 
         if not (cd.IsNone) then
-
+            
             let imageTemplate = Image.Load(cardTemplates.[cd.Value.cardType])
 
             addTitle (cd.Value, imageTemplate)
@@ -302,34 +310,5 @@ module CardMaker =
                 else
                     (card, image))
             |> (fun (card, image) -> image.Save($"{cd.Value.name}.png"))
-
-
-    let testHandle =
-
-        let arrows: LinkArrows =
-            { left = true
-              right = false
-              top = false
-              bottom = true
-              topLeft = false
-              topRight = true
-              bottomLeft = true
-              bottomRight = true }
-
-        let monster: CardTypes.Monster =
-            { defence = 1500
-              attack = 2200
-              level = 5
-              atribute = attributes.Fire
-              Type = "Boxer"
-              linkArrows = Some arrows }
-
-        let card: Card =
-            { name = "Oliver, the glutton"
-              description =
-                "This card cannot be effected by insect monsters; (quick) if a water monster activate its effect, banish this card."
-              cardType = CardType.Link
-              image = "./assets/oliver.jpeg"
-              monster = Some monster }
-
-        handle (Some card)
+            
+            printf $"{cd.Value.name}.png was saved!"
