@@ -527,8 +527,10 @@ module Main =
             ]
         ] )
 
+
+
 type MainWindow() =
-    inherit HostWindow()
+    inherit SukiUI.Controls.SukiWindow()
     do
         base.Title <- "Yugioh Card Creator"
         base.MinWidth <- 500
@@ -540,7 +542,10 @@ type App() =
     inherit Application()
 
     override this.Initialize() =
-        this.Styles.Add(FluentTheme())
+        // this.Styles.Add(FluentTheme())
+        let theme = SukiUI.SukiTheme()
+        theme.ThemeColor <- SukiUI.Enums.SukiColor.Blue
+        this.Styles.Add(theme)
         this.RequestedThemeVariant <- Styling.ThemeVariant.Dark
 
     override this.OnFrameworkInitializationCompleted() =

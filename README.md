@@ -15,6 +15,7 @@ An desktop application for creating Yu-Gi-Oh! cards. built with Avalonia FuncUI
 
 - [SixLabors.ImageSharp.Drawing](https://docs.sixlabors.com/articles/imagesharp/index.html)
 - [Avalonia.FuncUI](https://funcui.avaloniaui.net)
+- [SukiUI](https://github.com/kikipoulet/SukiUI)
 
 ## Acknoledgements
 
