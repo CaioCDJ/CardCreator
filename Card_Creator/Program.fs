@@ -125,6 +125,8 @@ module Main =
                 
                 if selectedCardType.Current = "Link" then
                     isLink.Set true
+                else 
+                    isLink.Set false
                 
                 preview.Set( not (String.IsNullOrWhiteSpace(selectedCardType.Current)) && x <> -1)
                 cardBrush.Set(setCardTypeTemplate selectedCardType.Current)
@@ -190,50 +192,62 @@ module Main =
             let levelBitmap = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/Level.png")))
             
             let saving = ctx.useState false 
+
+            let getCard = fun _ ->
+                if selectedCardType.Current = "Spell" || selectedCardType.Current = "Trap" then
+                    let card:Card = {
+                        name = name.Current
+                        description = if String.IsNullOrWhiteSpace(description.Current) then " " else description.Current
+                        cardType = toEnum selectedCardType.Current
+                        image = imgPath.Current
+                        monster = None
+                    }
+                    card
+                else
+                    let monster:Monster ={
+                        attack = attack.Current|> int
+                        defence =  if isLink.Current then 0 else defence.Current|> int
+                        level =  if isLink.Current then 1 else level.Current|> int
+                        atribute = attrToEnum atribute.Current
+                        Type = spellType.Current
+                        linkArrows = if isLink.Current then Some linkArrows.Current else None
+                        }
+                    let card:Card = {
+                        name = name.Current
+                        description = if String.IsNullOrWhiteSpace(description.Current) then " " else description.Current
+                        cardType = toEnum selectedCardType.Current
+                        image = imgPath.Current
+                        monster = Some monster
+                    }
+                    card
  
             let saveCard = fun x ->
                 if not saving.Current  then
                     saving.Set true
                     try
-                        let monster:Monster = {
-                            attack = attack.Current|> int
-                            defence =  if isLink.Current then 0 else defence.Current|> int
-                            level =  if isLink.Current then 1 else level.Current|> int
-                            atribute = attrToEnum atribute.Current
-                            Type = spellType.Current
-                            linkArrows = if isLink.Current then Some linkArrows.Current else None
-                            }
-
-                        let card:Card = {
-                            name = name.Current
-                            description = if String.IsNullOrWhiteSpace(description.Current) then " " else description.Current
-                            cardType = toEnum selectedCardType.Current
-                            image = imgPath.Current
-                            monster = Some monster
-                        }
+                        let card:Card = getCard()
                         
                         printfn $@"top: {linkArrows.Current.top}, bottom: {linkArrows.Current.bottom}, \n 
                         left:{linkArrows.Current.left}, right: {linkArrows.Current.right} \n
                         topLeft: {linkArrows.Current.topLeft}, topRight: {linkArrows.Current.topRight}, \n
                         bottomLeft: {linkArrows.Current.bottomLeft}, bottomRight: {linkArrows.Current.bottomRight}
                             "
-
                         Card_Creator.CardMaker.handle (Some card)
+                        SukiUI.Controls.SukiHost.ShowToast($"{name.Current} foi salvo!", "", TimeSpan.FromSeconds(5), fun x -> printfn("Toast clicked !"))
                         saving.Set false
+
                         // Environment.Exit 0
                     with
                     | :? System.DivideByZeroException -> saving.Set false
                 
             Grid.columnDefinitions "*,*"
-            Grid.children [                           
+            Grid.children [                          
                 Border.create [
                     Border.column 0
                     Border.isVisible preview.Current
                     Border.isEnabled preview.Current
                     Border.borderThickness(Thickness(50))
-                    Border.onPointerPressed setImagePath
                     Border.child(Grid.create[
-                        Grid.tip "Select Image"
                         Grid.height 500
                         Grid.width 300
                         Grid.rowDefinitions "60,20,250,130,*"
@@ -243,16 +257,22 @@ module Main =
                                 Grid.row 0
                                 Grid.width 300
                                 Grid.height 20
-                                Grid.margin (Thickness(25,54,19,0))
-                                Grid.columnDefinitions "176,*"
+                                Grid.margin (Thickness(25,52,19,0))
+                                Grid.columnDefinitions "178,*"
                                 Grid.children [
                                     // Card Name
                                     TextBlock.create[
                                         TextBlock.column 0
                                         TextBlock.text name.Current
                                         TextBlock.margin(Thickness(0,2))
-                                        TextBlock.fontSize 18
+                                        TextBlock.fontSize 16
                                         TextBlock.horizontalAlignment HorizontalAlignment.Left
+                                        TextBlock.foreground (
+                                            if selectedCardType.Current  = "Spell" || selectedCardType.Current = "Trap" || selectedCardType.Current = "Xyz" then 
+                                                Media.Brushes.WhiteSmoke
+                                            else 
+                                                Media.Brushes.Black
+                                            )
                                     ]
 
                                     // Card Attribute
@@ -275,12 +295,13 @@ module Main =
                                 Grid.columnDefinitions "20,20,20,20,20,20,20,20,20,20,20,20"
                                 Grid.margin (Thickness(20, 15,0,0))
                                 Grid.children [
-                                    for i in 0.. level.Current do
-                                        Image.create[
-                                            Image.column (12 - i - 1)
-                                            Image.height 20
-                                            Image.source levelBitmap
-                                        ]
+                                    if level.Current > 0 then
+                                        for i in 0.. (level.Current-1) do
+                                            Image.create[
+                                                Image.column (12 - i - 1)
+                                                Image.height 20
+                                                Image.source levelBitmap
+                                            ]
                                 ]
                             ]
                             
@@ -306,7 +327,7 @@ module Main =
                             Grid.create [
                                 Grid.row 3
                                 // Grid.height 35
-                                Grid.margin(Thickness(24,10,68,20))
+                                Grid.margin(Thickness(24,10,66,20))
                                 Grid.rowDefinitions "10,*,33"
                                 Grid.children [
                                     TextBlock.create [
@@ -332,21 +353,21 @@ module Main =
                                     StackPanel.create [
                                         StackPanel.row 2
                                         StackPanel.opacity 0.8
-                                        StackPanel.margin(Thickness(165,0,0,0))
+                                        StackPanel.margin(Thickness(165,3,0,0))
                                         // StackPanel.background Media.Brushes.MediumSlateBlue
                                         StackPanel.orientation Orientation.Horizontal
                                         StackPanel.children [
                                             TextBlock.create [
                                                 TextBlock.foreground Media.Brushes.Black
                                                 TextBlock.fontSize 12
-                                                TextBlock.margin(Thickness(5,0,0,0))
+                                                TextBlock.margin(Thickness(4,0,0,0))
                                                 TextBlock.fontWeight FontWeight.Bold
                                                 TextBlock.text attack.Current
                                             ]
                                             TextBlock.create [
                                                 TextBlock.foreground Media.Brushes.Black
                                                 TextBlock.fontSize 12
-                                                TextBlock.margin(Thickness(30,0,0,0))
+                                                TextBlock.margin(Thickness(28,0,0,0))
                                                 TextBlock.fontWeight FontWeight.Bold
                                                 TextBlock.text defence.Current
                                             ]
@@ -356,9 +377,10 @@ module Main =
                             ]
                             Button.create [ 
                                 Button.row 4
+                                Button.margin(Thickness(0,0,40,0))
                                 Button.content "Select an image"
-                                Button.verticalContentAlignment VerticalAlignment.Center
-                                Button.horizontalContentAlignment HorizontalAlignment.Center
+                                // Button.verticalContentAlignment VerticalAlignment.Center
+                                // Button.horizontalContentAlignment HorizontalAlignment.Center
                                 Button.width 300
                                 Button.onClick setImagePath
                             ]
@@ -402,11 +424,19 @@ module Main =
                                 ]
                             ]
                             
-                            Labeling("Attribute:", ComboBox.create[
-                                ComboBox.isVisible isVisible.Current
-                                ComboBox.onSelectedIndexChanged setAtribute 
-                                ComboBox.dataItems attributes
-                            ])
+                            StackPanel.create [ 
+                                StackPanel.isVisible isVisible.Current
+                                StackPanel.spacing 5
+                                StackPanel.children [
+                                    TextBlock.create [
+                                        TextBlock.text "Attribute:"
+                                    ]
+                                    ComboBox.create[
+                                        ComboBox.onSelectedIndexChanged setAtribute 
+                                        ComboBox.dataItems attributes
+                                    ]
+                                ]
+                            ]
 
                              // Monsters
                             Grid.create [
@@ -532,7 +562,7 @@ module Main =
 type MainWindow() =
     inherit SukiUI.Controls.SukiWindow()
     do
-        base.Title <- "Yugioh Card Creator"
+        base.Title <- "Yugioh Card Maker"
         base.MinWidth <- 500
         base.MinHeight <- 550
         base.Content <- Main.view ()
