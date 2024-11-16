@@ -48,8 +48,12 @@ module Main =
         "Link";
         "Ritual";
         "Xyz";
-       // "Pendulum";
-        "Spell"
+        "Pendulum_Fusion";
+        "Pendulum_Effect";
+        "Pendulum_Normal";
+        "Pendulum_Synchro";
+        "Pendulum_Xyz";
+        "Spell";
         "Trap";
     ]
     
@@ -83,6 +87,7 @@ module Main =
             let atribute = ctx.useState ""
             let spellType = ctx.useState ""
             let imgPath = ctx.useState ""
+            let is_pendulum = ctx.useState false
             let linkArrows = ctx.useState { 
                 left = false; 
                 right = false; 
@@ -114,21 +119,32 @@ module Main =
             let attributesImage = ctx.useState( setMonsterAttr("Fire"))
             
             let cardImage = ctx.useState( setCardImage None)
-            
+            let destinyImage = ctx.useState ""
+
             let isLink = ctx.useState false
             
             let setCardType = fun x -> 
                 selectedCardType.Set typesString.[ if x <= 0 then 0 else x ]
                 isVisible.Set (
-                    if selectedCardType.Current <> "Spell" && selectedCardType.Current <> "Trap" then true else     false
+                    if selectedCardType.Current <> "Spell" && selectedCardType.Current <> "Trap" then true else false
                 ) 
-                
+
+                is_pendulum.Set(
+                    match toEnum(selectedCardType.Current) with
+                    | CardType.Pendulum_Xyz 
+                    | CardType.Pendulum_Fusion 
+                    | CardType.Pendulum_Effect 
+                    | CardType.Pendulum_Normal 
+                    | CardType.Pendulum_Synchro -> true
+                    |_ -> false
+                    )
                 if selectedCardType.Current = "Link" then
                     isLink.Set true
                 else 
                     isLink.Set false
-                
+               
                 preview.Set( not (String.IsNullOrWhiteSpace(selectedCardType.Current)) && x <> -1)
+                
                 cardBrush.Set(setCardTypeTemplate selectedCardType.Current)
             
             let setAtribute  = fun x -> 
@@ -158,34 +174,46 @@ module Main =
             let setSpellType = fun x -> spellType.Set x
             let setDescription = fun x -> description.Set x
             let top = TopLevel.GetTopLevel ctx.control
-            
-            let openFile() = 
-                async{
-                    let filter = FilePickerFileType("Image types")
-                    filter.Patterns <- [|"*.png";"*.jpeg";"*.jpg"|]
+           
+            let openFile (isFile:bool) =
+                async {
+                    if isFile then
+                        let filter = FilePickerFileType("Image types")
+                        filter.Patterns <- [|"*.png";"*.jpeg";"*.jpg"|]
 
-                    let options = FilePickerOpenOptions(
-                        AllowMultiple = false  ,
-                        Title = "Select an image",
-                        FileTypeFilter = [|filter|]
+                        let options = FilePickerOpenOptions(
+                            AllowMultiple = false  ,
+                            Title = "Select an image",
+                            FileTypeFilter = [|filter|]
                         )
 
-                    let! file = 
-                        top.StorageProvider.OpenFilePickerAsync(options)
-                        |>Async.AwaitTask 
-                    
-                    // printfn $"{file.[0].Path}"
-                    if file.Count > 0 then
-                        let fileUri = file.[0].Path
-                        imgPath.Set (fileUri.AbsolutePath)
-                        cardImage.Set (setCardImage (Some fileUri))
+                        let! file = 
+                            top.StorageProvider.OpenFilePickerAsync(options)
+                            |>Async.AwaitTask
+                        
+                        if file.Count > 0 then
+                            let fileUri = file.[0].Path
+                            imgPath.Set (fileUri.AbsolutePath)
+                            cardImage.Set (setCardImage (Some fileUri))
+                        
+                    else 
+                        let options = FolderPickerOpenOptions(
+                            AllowMultiple = false
+                        )
+                        
+                        let! folder = 
+                            top.StorageProvider.OpenFolderPickerAsync(options)
+                            |>Async.AwaitTask 
+                        
+                        if folder.Count > 0 then
+                            let folderUri = folder.[0].Path
+                            destinyImage.Set folderUri.AbsoluteUri
 
-                }
-            
+                }            
 
             let setImagePath _ =
-                openFile() 
-                |>Async.StartImmediate
+                openFile true 
+                |> Async.StartImmediate
                 // imgPath.Set (file.ToString())
 
             let attr = new Bitmap(AssetLoader.Open(Uri("avares://Card_Creator/assets/attributes/FIRE.png")))
@@ -224,21 +252,25 @@ module Main =
             let saveCard = fun x ->
                 if not saving.Current  then
                     saving.Set true
-                    try
-                        let card:Card = getCard()
-                        
-                        printfn $@"top: {linkArrows.Current.top}, bottom: {linkArrows.Current.bottom}, \n 
-                        left:{linkArrows.Current.left}, right: {linkArrows.Current.right} \n
-                        topLeft: {linkArrows.Current.topLeft}, topRight: {linkArrows.Current.topRight}, \n
-                        bottomLeft: {linkArrows.Current.bottomLeft}, bottomRight: {linkArrows.Current.bottomRight}
+                    openFile(false)
+                    |>Async.StartImmediateAsTask
+                    |>Async.AwaitTask
+                    |>fun _ ->
+                        try
+                            let card:Card = getCard()
+                            printfn $"\n\n {destinyImage.Current} \n\n" 
+                            printfn $@"top: {linkArrows.Current.top}, bottom: {linkArrows.Current.bottom}, \n 
+                            left:{linkArrows.Current.left}, right: {linkArrows.Current.right} \n
+                            topLeft: {linkArrows.Current.topLeft}, topRight: {linkArrows.Current.topRight}, \n
+                            bottomLeft: {linkArrows.Current.bottomLeft}, bottomRight: {linkArrows.Current.bottomRight}
                             "
-                        Card_Creator.CardMaker.handle (Some card)
-                        SukiUI.Controls.SukiHost.ShowToast($"{name.Current} foi salvo!", "", TimeSpan.FromSeconds(5), fun x -> printfn("Toast clicked !"))
-                        saving.Set false
+                            Card_Creator.CardMaker.handle (Some card)
+                            SukiUI.Controls.SukiHost.ShowToast($"{name.Current} foi salvo!", "", TimeSpan.FromSeconds(5), fun x -> printfn("Toast clicked !"))
+                            saving.Set false
 
-                        // Environment.Exit 0
-                    with
-                    | :? System.DivideByZeroException -> saving.Set false
+                            // Environment.Exit 0
+                        with
+                        | :? System.DivideByZeroException -> saving.Set false
                 
             Grid.columnDefinitions "*,*"
             Grid.children [                          
@@ -268,7 +300,7 @@ module Main =
                                         TextBlock.fontSize 16
                                         TextBlock.horizontalAlignment HorizontalAlignment.Left
                                         TextBlock.foreground (
-                                            if selectedCardType.Current  = "Spell" || selectedCardType.Current = "Trap" || selectedCardType.Current = "Xyz" then 
+                                            if selectedCardType.Current  = "Spell" || selectedCardType.Current = "Trap" || selectedCardType.Current = "Xyz" || is_pendulum.Current then 
                                                 Media.Brushes.WhiteSmoke
                                             else 
                                                 Media.Brushes.Black
@@ -291,7 +323,7 @@ module Main =
                                 Grid.isVisible isVisible.Current
                                 Grid.width 300
                                 Grid.height 10
-                                Grid.horizontalAlignment  (if cardType.Current = "Xyz" then HorizontalAlignment.Right else HorizontalAlignment.Left)
+                                Grid.horizontalAlignment  (if cardType.Current = "Xyz" || cardType.Current = "Pendulum_Xyz" then HorizontalAlignment.Right else HorizontalAlignment.Left)
                                 Grid.columnDefinitions "20,20,20,20,20,20,20,20,20,20,20,20"
                                 Grid.margin (Thickness(20, 15,0,0))
                                 Grid.children [
@@ -307,12 +339,20 @@ module Main =
                             
                             Grid.create [
                                 Grid.row 2
-                                Grid.height 250
+                                Grid.height (
+                                    if is_pendulum.Current 
+                                        then 220 else 250
+                                    )
                                 Grid.width 300
                                 Grid.opacity 0.9
                                 Grid.children[ 
                                     Border.create[
-                                        Border.borderThickness(Thickness(14,12,56,8))
+                                        Border.borderThickness(
+                                            if is_pendulum.Current then
+                                                Thickness(-5,-3,40,30)
+                                            else 
+                                                Thickness(14,12,56,8)
+                                                )
                                         Border.width 300
                                         Border.child(
                                             Image.create[
@@ -502,6 +542,20 @@ module Main =
                                 ]
                             ]
 
+                            Grid.create [
+                                Grid.isVisible (isVisible.Current && is_pendulum.Current)
+                                Grid.columnDefinitions "*,*"
+                                Grid.children [
+                                     LabelingCol("Blue Scale:", TextBox.create [
+                                       // TextBox.onTextChanged setAttack
+                                    ],0)
+                                    
+                                     LabelingCol("Red Scale:", TextBox.create [
+                                       // TextBox.onTextChanged setAttack
+                                    ],1)
+                                ]
+                            ]
+
                             Grid.create [ 
                                 Grid.isVisible isVisible.Current
                                 Grid.columnDefinitions "*,*"
@@ -516,7 +570,7 @@ module Main =
                                     ],1)
                                 ]
                             ]
-                          
+
                             Border.create [
                                 Border.isVisible(not isVisible.Current)
                                 Border.child(
@@ -536,9 +590,17 @@ module Main =
                                 )
                             ]
                             
+                            Labeling("Pendulum Effect:", TextBox.create [ 
+                                TextBox.minHeight(100)
+                                TextBox.isVisible( is_pendulum.Current)
+                                TextBox.acceptsReturn true
+                                TextBox.textWrapping TextWrapping.Wrap
+                                // TextBox.onTextChanged(setDescription)
+                            ])
+
 
                             // imutavel
-                            Labeling("Description:", TextBox.create [ 
+                            Labeling("Effect:", TextBox.create [ 
                                 TextBox.minHeight(100)
                                 TextBox.acceptsReturn true
                                 TextBox.textWrapping TextWrapping.Wrap
@@ -563,7 +625,7 @@ type MainWindow() =
     inherit SukiUI.Controls.SukiWindow()
     do
         base.Title <- "Yugioh Card Maker"
-        base.MinWidth <- 500
+        base.MinWidth <- 550
         base.MinHeight <- 550
         base.Content <- Main.view ()
 

@@ -11,7 +11,11 @@ module CardTypes =
         | Link
         | Ritual
         | Xyz
-        | Pendulum
+        | Pendulum_Normal
+        | Pendulum_Effect
+        | Pendulum_Fusion
+        | Pendulum_Synchro
+        | Pendulum_Xyz
         | Spell
         | Trap
 
@@ -60,7 +64,13 @@ module CardTypes =
               CardType.Ritual, "avares://Card_Creator/assets/cardTemplates/Ritual.jpeg"
               CardType.Xyz, "avares://Card_Creator/assets/cardTemplates/Xyz.jpeg"
               CardType.Spell, "avares://Card_Creator/assets/cardTemplates/Spell.jpeg"
-              CardType.Trap, "avares://Card_Creator/assets/cardTemplates/Trap.jpeg" ]
+              CardType.Trap, "avares://Card_Creator/assets/cardTemplates/Trap.jpeg" 
+              CardType.Pendulum_Normal, "avares://Card_Creator/assets/cardTemplates/Pendulum_Normal.jpeg"
+              CardType.Pendulum_Effect, "avares://Card_Creator/assets/cardTemplates/Pendulum_Effect.jpeg"
+              CardType.Pendulum_Fusion, "avares://Card_Creator/assets/cardTemplates/Pendulum_Fusion.jpeg"
+              CardType.Pendulum_Synchro, "avares://Card_Creator/assets/cardTemplates/Pendulum_Synchro.jpeg"
+              CardType.Pendulum_Xyz, "avares://Card_Creator/assets/cardTemplates/Pendulum_Xyz.jpeg"
+              ]
 
     let toEnum (x: string) =
         match x with
@@ -71,9 +81,13 @@ module CardTypes =
         | "Link" -> CardType.Link
         | "Ritual" -> CardType.Ritual
         | "Xyz" -> CardType.Xyz
-        | "Pendulum" -> CardType.Pendulum
         | "Spell" -> CardType.Spell
         | "Trap" -> CardType.Trap
+        | "Pendulum_Normal" -> CardType.Pendulum_Normal
+        | "Pendulum_Effect" -> CardType.Pendulum_Effect
+        | "Pendulum_Fusion" -> CardType.Pendulum_Fusion
+        | "Pendulum_Synchro" -> CardType.Pendulum_Synchro
+        | "Pendulum_Xyz" -> CardType.Pendulum_Xyz
         | _ -> CardType.Normal
 
     let attributesAssets =

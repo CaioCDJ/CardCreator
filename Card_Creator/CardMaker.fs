@@ -130,6 +130,10 @@ module CardMaker =
 
         (card, image)
 
+    let addPendulumScales ((card, image): Card * Image) : Card * Image =
+
+        (card, image)
+
 
     let addType ((card, image): Card * Image) : Card * Image =
 
@@ -199,41 +203,41 @@ module CardMaker =
 
             // straight
             if card.monster.Value.linkArrows.Value.top then
-                let arrowM  = Image.Load(arrowAsset false)
+                let arrowM = Image.Load(arrowAsset false)
                 image.Mutate(fun x -> x.DrawImage(arrowM, Point(559, 299), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.bottom then
-                let arrowM  = Image.Load(arrowAsset false)
+                let arrowM = Image.Load(arrowAsset false)
                 arrowM.Mutate(fun x -> x.Rotate(180f) |> ignore)
                 image.Mutate(fun x -> x.DrawImage(arrowM, Point(559, 1425), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.left then
-                let arrowM  = Image.Load(arrowAsset false)
+                let arrowM = Image.Load(arrowAsset false)
                 arrowM.Mutate(fun x -> x.Rotate(270f) |> ignore)
                 image.Mutate(fun x -> x.DrawImage(arrowM, Point(95, 763), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.right then
-                let arrowM  = Image.Load(arrowAsset false)
+                let arrowM = Image.Load(arrowAsset false)
                 arrowM.Mutate(fun x -> x.Rotate(90f) |> ignore)
                 image.Mutate(fun x -> x.DrawImage(arrowM, Point(1223, 763), 1f) |> ignore)
 
             // diagonal
             if card.monster.Value.linkArrows.Value.topLeft then
-                let arrowM  = Image.Load(arrowAsset true)
+                let arrowM = Image.Load(arrowAsset true)
                 image.Mutate(fun x -> x.DrawImage(arrowD, Point(111, 317), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.topRight then
-                let arrowM  = Image.Load(arrowAsset true)
+                let arrowM = Image.Load(arrowAsset true)
                 arrowM.Mutate(fun x -> x.Rotate(90f) |> ignore)
                 image.Mutate(fun x -> x.DrawImage(arrowM, Point(1151, 317), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.bottomRight then
-                let arrowM  = Image.Load(arrowAsset true)
+                let arrowM = Image.Load(arrowAsset true)
                 arrowM.Mutate(fun x -> x.Rotate(180f) |> ignore)
                 image.Mutate(fun x -> x.DrawImage(arrowM, Point(1139, 1358), 1f) |> ignore)
 
             if card.monster.Value.linkArrows.Value.bottomLeft then
-                let arrowM  = Image.Load(arrowAsset true)
+                let arrowM = Image.Load(arrowAsset true)
                 arrowM.Mutate(fun x -> x.Rotate(270f) |> ignore)
                 image.Mutate(fun x -> x.DrawImage(arrowM, Point(111, 1358), 1f) |> ignore)
 
@@ -281,7 +285,7 @@ module CardMaker =
 
             let brush = Brushes.Solid(Color.Black)
 
-            image.Mutate(fun x -> x.DrawText(optionsName, "-"+ rate.ToString(), brush) |> ignore)
+            image.Mutate(fun x -> x.DrawText(optionsName, "-" + rate.ToString(), brush) |> ignore)
 
             (card, image)
         else
@@ -291,7 +295,7 @@ module CardMaker =
     let handle (cd: Card option) =
 
         if not (cd.IsNone) then
-            
+
             let imageTemplate = Image.Load(cardTemplates.[cd.Value.cardType])
 
             addTitle (cd.Value, imageTemplate)
@@ -303,12 +307,11 @@ module CardMaker =
                     |> addBattleAttr
                     |> addAttribute
                     |> (fun (card, image) ->
-                        if card.cardType = CardType.Link then
-                            addArrows (card, image) |> addLinkRate
-                        else
-                            addLevels (card, image))
+                        match card.cardType with
+                        | CardType.Link -> addArrows (card, image) |> addLinkRate
+                        | _ -> addLevels (card, image))
                 else
                     (card, image))
             |> (fun (card, image) -> image.Save($"{cd.Value.name}.png"))
-            
+
             printf $"{cd.Value.name}.png was saved!"
