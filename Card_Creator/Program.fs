@@ -88,6 +88,9 @@ module Main =
             let spellType = ctx.useState ""
             let imgPath = ctx.useState ""
             let is_pendulum = ctx.useState false
+            let blueScale = ctx.useState 0
+            let redScale = ctx.useState 0
+            let pendulum_effect = ctx.useState ""
             let linkArrows = ctx.useState { 
                 left = false; 
                 right = false; 
@@ -173,6 +176,9 @@ module Main =
             let setDefence = fun x -> defence.Set x
             let setSpellType = fun x -> spellType.Set x
             let setDescription = fun x -> description.Set x
+            let setPendulumEffect = fun x -> pendulum_effect.Set x
+            let setRedScale = fun x -> redScale.Set x
+            let setBlueScale = fun x -> blueScale.Set x
             let top = TopLevel.GetTopLevel ctx.control
            
             let openFile (isFile:bool) =
@@ -229,6 +235,7 @@ module Main =
                         cardType = toEnum selectedCardType.Current
                         image = imgPath.Current
                         monster = None
+                        pendulum_description = None
                     }
                     card
                 else
@@ -239,8 +246,11 @@ module Main =
                         atribute = attrToEnum atribute.Current
                         Type = spellType.Current
                         linkArrows = if isLink.Current then Some linkArrows.Current else None
+                        blueScale = Some blueScale.Current
+                        redScale = Some redScale.Current
                         }
                     let card:Card = {
+                        pendulum_description = Some pendulum_effect.Current
                         name = name.Current
                         description = if String.IsNullOrWhiteSpace(description.Current) then " " else description.Current
                         cardType = toEnum selectedCardType.Current
@@ -543,16 +553,46 @@ module Main =
                             ]
 
                             Grid.create [
-                                Grid.isVisible (isVisible.Current && is_pendulum.Current)
+                                Grid.isVisible is_pendulum.Current
                                 Grid.columnDefinitions "*,*"
                                 Grid.children [
-                                     LabelingCol("Blue Scale:", TextBox.create [
-                                       // TextBox.onTextChanged setAttack
-                                    ],0)
-                                    
-                                     LabelingCol("Red Scale:", TextBox.create [
-                                       // TextBox.onTextChanged setAttack
-                                    ],1)
+                                     LabelingCol("Blue Scale:", ComboBox.create[
+                                        ComboBox.onSelectedIndexChanged(setBlueScale)
+                                        ComboBox.dataItems [
+                                            "0"
+                                            "1"
+                                            "2"
+                                            "3"
+                                            "4"
+                                            "5"
+                                            "6"
+                                            "7"
+                                            "8"
+                                            "9"
+                                            "10"
+                                            "11"
+                                            "12"
+                                        ]              
+                                     ],0)
+                                     
+                                     LabelingCol("Red Scale:", ComboBox.create[
+                                        ComboBox.onSelectedIndexChanged(setRedScale)
+                                        ComboBox.dataItems [
+                                            "0"
+                                            "1"
+                                            "2"
+                                            "3"
+                                            "4"
+                                            "5"
+                                            "6"
+                                            "7"
+                                            "8"
+                                            "9"
+                                            "10"
+                                            "11"
+                                            "12"
+                                        ]
+                                     ],1)
                                 ]
                             ]
 
@@ -595,6 +635,7 @@ module Main =
                                 TextBox.isVisible( is_pendulum.Current)
                                 TextBox.acceptsReturn true
                                 TextBox.textWrapping TextWrapping.Wrap
+                                TextBox.onTextChanged(setPendulumEffect)
                                 // TextBox.onTextChanged(setDescription)
                             ])
 

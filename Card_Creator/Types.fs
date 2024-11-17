@@ -43,12 +43,15 @@ module CardTypes =
           level: int
           atribute: attributes
           Type: string
+          blueScale: int option
+          redScale: int option
           linkArrows: LinkArrows option }
 
 
     type Card =
         { name: string
           description: string
+          pendulum_description: string option
           image: string
           cardType: CardType
           monster: Monster option }
@@ -64,13 +67,12 @@ module CardTypes =
               CardType.Ritual, "avares://Card_Creator/assets/cardTemplates/Ritual.jpeg"
               CardType.Xyz, "avares://Card_Creator/assets/cardTemplates/Xyz.jpeg"
               CardType.Spell, "avares://Card_Creator/assets/cardTemplates/Spell.jpeg"
-              CardType.Trap, "avares://Card_Creator/assets/cardTemplates/Trap.jpeg" 
+              CardType.Trap, "avares://Card_Creator/assets/cardTemplates/Trap.jpeg"
               CardType.Pendulum_Normal, "avares://Card_Creator/assets/cardTemplates/Pendulum_Normal.jpeg"
               CardType.Pendulum_Effect, "avares://Card_Creator/assets/cardTemplates/Pendulum_Effect.jpeg"
               CardType.Pendulum_Fusion, "avares://Card_Creator/assets/cardTemplates/Pendulum_Fusion.jpeg"
               CardType.Pendulum_Synchro, "avares://Card_Creator/assets/cardTemplates/Pendulum_Synchro.jpeg"
-              CardType.Pendulum_Xyz, "avares://Card_Creator/assets/cardTemplates/Pendulum_Xyz.jpeg"
-              ]
+              CardType.Pendulum_Xyz, "avares://Card_Creator/assets/cardTemplates/Pendulum_Xyz.jpeg" ]
 
     let toEnum (x: string) =
         match x with

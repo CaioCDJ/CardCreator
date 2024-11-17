@@ -22,7 +22,12 @@ module CardMaker =
               CardType.Ritual, "./assets/cardTemplates/Ritual.jpeg"
               CardType.Xyz, "./assets/cardTemplates/Xyz.jpeg"
               CardType.Spell, "./assets/cardTemplates/Spell.jpeg"
-              CardType.Trap, "./assets/cardTemplates/Trap.jpeg" ]
+              CardType.Trap, "./assets/cardTemplates/Trap.jpeg"
+              CardType.Pendulum_Normal, "./assets/cardTemplates/Pendulum_Normal.jpeg"
+              CardType.Pendulum_Effect, "./assets/cardTemplates/Pendulum_Effect.jpeg"
+              CardType.Pendulum_Fusion, "./assets/cardTemplates/Pendulum_Fusion.jpeg"
+              CardType.Pendulum_Synchro, "./assets/cardTemplates/Pendulum_Synchro.jpeg"
+              CardType.Pendulum_Xyz, "./assets/cardTemplates/Pendulum_Xyz.jpeg" ]
 
     let attributeAssets =
         Map
@@ -54,6 +59,7 @@ module CardMaker =
                     card.cardType = CardType.Xyz
                     || card.cardType = CardType.Spell
                     || card.cardType = CardType.Trap
+                    || card.cardType = CardType.Pendulum_Xyz
                 then
                     Color.WhiteSmoke
                 else
@@ -70,25 +76,44 @@ module CardMaker =
     let addDescription ((card, image): Card * Image) : Card * Image =
 
         let font = SystemFonts.CreateFont("Arial", 37f, FontStyle.Regular)
+        let brush = Brushes.Solid(Color.Black)
 
         let optionsDescription = RichTextOptions(font)
 
-        optionsDescription.Origin <-
-            PointF(
-                109.0f,
-                if card.cardType = CardType.Trap || card.cardType = CardType.Spell then
-                    1530.0f
-                else
-                    1580.0f
-            )
-
         optionsDescription.WordBreaking <- WordBreaking.Standard
-        optionsDescription.WrappingLength <- 1165f
         optionsDescription.TextJustification <- TextJustification.InterWord
         optionsDescription.VerticalAlignment <- VerticalAlignment.Top
         optionsDescription.HorizontalAlignment <- HorizontalAlignment.Left
 
-        let brush = Brushes.Solid(Color.Black)
+
+        optionsDescription.WrappingLength <- 920f
+
+        if
+            card.cardType = CardType.Pendulum_Effect
+            || card.cardType = CardType.Pendulum_Normal
+            || card.cardType = CardType.Pendulum_Fusion
+            || card.cardType = CardType.Pendulum_Synchro
+            || card.cardType = CardType.Pendulum_Xyz
+        then
+            optionsDescription.Origin <- PointF(220.0f, 1280f)
+            image.Mutate(fun x -> x.DrawText(optionsDescription, card.pendulum_description.Value, brush) |> ignore)
+
+
+        optionsDescription.WrappingLength <- 1165f
+
+        optionsDescription.Origin <-
+            PointF(
+                109.0f,
+                match card.cardType with
+                | CardType.Trap
+                | CardType.Spell -> 1530.0f
+                | CardType.Pendulum_Fusion
+                | CardType.Pendulum_Effect
+                | CardType.Pendulum_Normal
+                | CardType.Pendulum_Synchro
+                | CardType.Pendulum_Xyz -> 1630.0f
+                | _ -> 1580.0f
+            )
 
         image.Mutate(fun x -> x.DrawText(optionsDescription, card.description, brush) |> ignore)
 
@@ -98,11 +123,24 @@ module CardMaker =
 
         let otherImage = Image.Load(card.image)
 
-        let location = Point(168, 372)
+        match card.cardType with
+        | CardType.Pendulum_Normal
+        | CardType.Pendulum_Effect
+        | CardType.Pendulum_Fusion
+        | CardType.Pendulum_Synchro
+        | CardType.Pendulum_Xyz ->
+            let location = Point(91, 360)
 
-        otherImage.Mutate(fun x -> x.Resize(1051, 1051) |> ignore)
+            otherImage.Mutate(fun x -> x.Resize(1210, 898) |> ignore)
 
-        image.Mutate(fun x -> x.DrawImage(otherImage, location, 1f) |> ignore)
+            image.Mutate(fun x -> x.DrawImage(otherImage, location, 1f) |> ignore)
+
+        | _ ->
+            let location = Point(168, 372)
+
+            otherImage.Mutate(fun x -> x.Resize(1051, 1051) |> ignore)
+
+            image.Mutate(fun x -> x.DrawImage(otherImage, location, 1f) |> ignore)
 
         (card, image)
 
@@ -115,8 +153,7 @@ module CardMaker =
                 | _ -> "./assets/Level.png"
             )
 
-
-        if card.cardType = CardType.Xyz then
+        if card.cardType = CardType.Xyz || card.cardType = CardType.Pendulum_Xyz then
             for i in 1 .. card.monster.Value.level do
                 let pointW = if i = 1 then 148 else (148 - (level.Width - (95 * i)))
 
@@ -132,6 +169,29 @@ module CardMaker =
 
     let addPendulumScales ((card, image): Card * Image) : Card * Image =
 
+        let font = SystemFonts.CreateFont("Arial", 90f, FontStyle.Regular)
+        let optionsScale = RichTextOptions(font)
+
+        optionsScale.Origin <-
+            if card.monster.Value.blueScale.Value > 9 then
+                PointF(90f, 1430f)
+            else
+                PointF(115f, 1430f)
+
+        image.Mutate(fun x ->
+            x.DrawText(optionsScale, card.monster.Value.blueScale.Value.ToString(), Brushes.Solid(Color.Black))
+            |> ignore)
+
+        optionsScale.Origin <- 
+            if card.monster.Value.redScale.Value > 9 then 
+                PointF(1190f, 1430f)
+            else
+                PointF(1190f, 1430f)
+
+        image.Mutate(fun x ->
+            x.DrawText(optionsScale, card.monster.Value.redScale.Value.ToString(), Brushes.Solid(Color.Black))
+            |> ignore)
+
         (card, image)
 
 
@@ -142,7 +202,15 @@ module CardMaker =
         let font = SystemFonts.CreateFont("Arial", 45f, FontStyle.Bold)
         let optionsType = RichTextOptions(font)
 
-        optionsType.Origin <- PointF(107f, 1528f)
+        optionsType.Origin <-
+            match card.cardType with
+            | CardType.Pendulum_Effect
+            | CardType.Pendulum_Normal
+            | CardType.Pendulum_Fusion
+            | CardType.Pendulum_Synchro
+            | CardType.Pendulum_Xyz -> PointF(107f, 1580f)
+            | _ -> PointF(107f, 1528f)
+
         optionsType.WordBreaking <- WordBreaking.Standard
         optionsType.WrappingLength <- 1165f
         optionsType.TextJustification <- TextJustification.InterWord
@@ -310,6 +378,14 @@ module CardMaker =
                         match card.cardType with
                         | CardType.Link -> addArrows (card, image) |> addLinkRate
                         | _ -> addLevels (card, image))
+                    |> (fun (card, image) ->
+                        match card.cardType with
+                        | CardType.Pendulum_Normal
+                        | CardType.Pendulum_Effect
+                        | CardType.Pendulum_Fusion
+                        | CardType.Pendulum_Synchro
+                        | CardType.Pendulum_Xyz -> addPendulumScales (card, image)
+                        | _ -> (card, image))
                 else
                     (card, image))
             |> (fun (card, image) -> image.Save($"{cd.Value.name}.png"))
